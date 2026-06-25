@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="PasteRTC manual WebRTC signaling proof-of-concept."
+    />
+    <title>PasteRTC</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="main.js" type="module"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <p class="eyebrow">Serverless browser connection</p>
+        <h1>PasteRTC</h1>
+        <p class="intro">
+          Choose how this browser should join the connection.
+        </p>
+      </header>
+
+      <nav class="mode-picker" aria-label="Connection mode">
+        <button class="mode-button" type="button" data-mode="host">
+          Host mode
+        </button>
+        <button class="mode-button" type="button" data-mode="client">
+          Client mode
+        </button>
+      </nav>
+
+      <section class="mode-panel" id="host-panel" aria-labelledby="host-title" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="step-label">Host</p>
+            <h2 id="host-title">Create a connection</h2>
+          </div>
+          <p class="status" id="host-status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span class="status-text">Not connected</span>
+          </p>
+        </div>
+
+        <button class="primary-button" id="create-offer" type="button">
+          Create Offer
+        </button>
+
+        <label for="host-offer">Offer</label>
+        <textarea
+          id="host-offer"
+          rows="7"
+          readonly
+          placeholder="Your offer will appear here."
+        ></textarea>
+
+        <label for="host-answer">Answer input</label>
+        <textarea
+          id="host-answer"
+          rows="7"
+          placeholder="Paste the client's answer here."
+        ></textarea>
+
+        <button class="secondary-button" id="accept-answer" type="button">
+          Accept Answer
+        </button>
+
+        <div class="message-panel">
+          <h3>Messages</h3>
+          <label for="host-message">Message</label>
+          <div class="message-compose">
+            <input
+              id="host-message"
+              type="text"
+              placeholder="Enter a test message."
+              disabled
+            />
+            <button id="host-send" type="button" disabled>Send</button>
+          </div>
+
+          <p class="log-label">Received messages</p>
+          <ol class="message-log" id="host-message-log" aria-live="polite"></ol>
+        </div>
+      </section>
+
+      <section
+        class="mode-panel"
+        id="client-panel"
+        aria-labelledby="client-title"
+        hidden
+      >
+        <div class="panel-heading">
+          <div>
+            <p class="step-label">Client</p>
+            <h2 id="client-title">Join a connection</h2>
+          </div>
+          <p class="status" id="client-status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span class="status-text">Not connected</span>
+          </p>
+        </div>
+
+        <label for="client-offer">Offer input</label>
+        <textarea
+          id="client-offer"
+          rows="7"
+          placeholder="Paste the host's offer here."
+        ></textarea>
+
+        <button class="primary-button" id="create-answer" type="button">
+          Create Answer
+        </button>
+
+        <label for="client-answer">Answer</label>
+        <textarea
+          id="client-answer"
+          rows="7"
+          readonly
+          placeholder="Your answer will appear here."
+        ></textarea>
+
+        <div class="message-panel">
+          <h3>Messages</h3>
+          <label for="client-message">Message</label>
+          <div class="message-compose">
+            <input
+              id="client-message"
+              type="text"
+              placeholder="Enter a test message."
+              disabled
+            />
+            <button id="client-send" type="button" disabled>Send</button>
+          </div>
+
+          <p class="log-label">Received messages</p>
+          <ol class="message-log" id="client-message-log" aria-live="polite"></ol>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,552 @@
+# ARCHITECTURE
+
+This document explains the internal structure of the PasteRTC project.
+
+PasteRTC is a small TypeScript/JavaScript library for connecting browsers through WebRTC DataChannels without any backend server.
+
+The project starts simple and becomes more modular over time.
+
+---
+
+# Core Idea
+
+PasteRTC hides the complexity of WebRTC behind a simple API.
+
+Instead of forcing users to directly manage:
+
+* RTCPeerConnection
+* RTCDataChannel
+* Offer
+* Answer
+* ICE candidates
+* Connection states
+
+PasteRTC exposes simple Host and Client objects.
+
+Example:
+
+```ts
+const host = new PasteRTC.Host();
+
+const offer = await host.createOffer();
+
+await host.acceptAnswer(answerText);
+
+host.on("data", (data, clientId) => {
+    console.log(data, clientId);
+});
+```
+
+---
+
+# High-Level Structure
+
+```text
+PasteRTC
+├─ Host
+├─ Client
+├─ Connection
+├─ Signaling
+├─ Events
+├─ Controller Helpers
+└─ Utilities
+```
+
+Each module has a clear responsibility.
+
+---
+
+# Module Responsibilities
+
+## Host
+
+The Host represents the main browser.
+
+Typical use case:
+
+* Desktop browser
+* Main game screen
+* Presentation screen
+* Shared canvas owner
+
+Responsibilities:
+
+* Create offers
+* Accept answers
+* Manage one or more clients
+* Send messages to a specific client
+* Broadcast messages to all clients
+* Emit client-related events
+
+Future API:
+
+```ts
+const host = new Host();
+
+const offer = await host.createOffer();
+
+await host.acceptAnswer(answerText);
+
+host.send(clientId, data);
+
+host.broadcast(data);
+```
+
+Internally, the Host owns multiple Connection objects.
+
+```text
+Host
+├─ Connection to Client A
+├─ Connection to Client B
+└─ Connection to Client C
+```
+
+In Phase 1, only one client is required.
+
+Multi-client support is added later.
+
+---
+
+## Client
+
+The Client represents a browser that connects to a Host.
+
+Typical use case:
+
+* Phone controller
+* Remote input device
+* Secondary screen
+* Viewer
+
+Responsibilities:
+
+* Accept an offer from the Host
+* Generate an answer
+* Send messages to the Host
+* Receive messages from the Host
+* Emit connection events
+
+Future API:
+
+```ts
+const client = new Client();
+
+const answer = await client.acceptOffer(offerText);
+
+client.send({
+    type: "button",
+    key: "A",
+    pressed: true
+});
+```
+
+A Client owns one Connection object.
+
+---
+
+## Connection
+
+The Connection module wraps one WebRTC peer connection.
+
+Responsibilities:
+
+* Create RTCPeerConnection
+* Create or receive RTCDataChannel
+* Open and close the channel
+* Send raw messages
+* Receive raw messages
+* Track connection state
+* Emit low-level events
+
+Conceptually:
+
+```text
+Connection
+├─ RTCPeerConnection
+└─ RTCDataChannel
+```
+
+Host and Client should not directly manipulate raw WebRTC objects unless necessary.
+
+They should use Connection as the internal abstraction.
+
+---
+
+## Signaling
+
+The Signaling module handles copy-paste signaling strings.
+
+Responsibilities:
+
+* Convert WebRTC offer objects into strings
+* Convert WebRTC answer objects into strings
+* Parse signaling strings back into objects
+* Validate signaling type
+* Add readable prefixes
+* Optionally compress data in the future
+
+Signaling string examples:
+
+```text
+PASTERTC_OFFER:...
+```
+
+```text
+PASTERTC_ANSWER:...
+```
+
+The first version may use plain JSON strings.
+
+Later versions may use:
+
+```text
+JSON → base64url → optional compression
+```
+
+Signaling must remain manual and serverless.
+
+No signaling server is allowed.
+
+---
+
+## Events
+
+PasteRTC should use a small event system.
+
+Common events:
+
+```text
+connected
+disconnected
+data
+error
+statechange
+```
+
+Host-specific events:
+
+```text
+clientConnected
+clientDisconnected
+```
+
+The public API should look like this:
+
+```ts
+host.on("data", (data, clientId) => {});
+
+client.on("connected", () => {});
+```
+
+The event system should be small and dependency-free.
+
+---
+
+## Controller Helpers
+
+Controller Helpers are optional high-level utilities for the phone-controller use case.
+
+They should not be part of the first proof of concept.
+
+Future helpers:
+
+```ts
+client.sendButton("A", true);
+
+client.sendStick({
+    x: 0.5,
+    y: -0.2
+});
+
+client.sendTilt({
+    alpha,
+    beta,
+    gamma
+});
+```
+
+Possible helper modules:
+
+```text
+controller/
+├─ button
+├─ stick
+└─ tilt
+```
+
+These helpers should only format and send messages.
+
+They should not be required for basic communication.
+
+---
+
+## Utilities
+
+Utilities contain small reusable functions.
+
+Examples:
+
+* ID generation
+* JSON safety helpers
+* base64url encoding
+* type guards
+* debug logging
+* timeout helpers
+
+Utilities should remain small.
+
+Avoid creating large utility modules too early.
+
+---
+
+# Suggested Folder Structure
+
+Early project structure:
+
+```text
+src/
+├─ index.ts
+├─ host.ts
+├─ client.ts
+├─ connection.ts
+├─ signaling.ts
+├─ events.ts
+└─ utils.ts
+```
+
+Later project structure:
+
+```text
+src/
+├─ index.ts
+│
+├─ host/
+│  └─ Host.ts
+│
+├─ client/
+│  └─ Client.ts
+│
+├─ connection/
+│  ├─ Connection.ts
+│  └─ ConnectionState.ts
+│
+├─ signaling/
+│  ├─ encodeSignal.ts
+│  ├─ decodeSignal.ts
+│  └─ signalTypes.ts
+│
+├─ events/
+│  └─ EventEmitter.ts
+│
+├─ controller/
+│  ├─ button.ts
+│  ├─ stick.ts
+│  └─ tilt.ts
+│
+└─ utils/
+   ├─ id.ts
+   ├─ json.ts
+   └─ debug.ts
+```
+
+Do not start with the large structure.
+
+Begin small.
+
+Split files only when the code clearly needs separation.
+
+---
+
+# Data Flow
+
+## Host Creates Offer
+
+```text
+Host
+ ↓
+Connection creates RTCPeerConnection
+ ↓
+Connection creates RTCDataChannel
+ ↓
+RTCPeerConnection creates offer
+ ↓
+Signaling encodes offer
+ ↓
+User copies offer string
+```
+
+---
+
+## Client Accepts Offer
+
+```text
+User pastes offer string
+ ↓
+Signaling decodes offer
+ ↓
+Client creates Connection
+ ↓
+Client sets remote description
+ ↓
+Client creates answer
+ ↓
+Signaling encodes answer
+ ↓
+User copies answer string
+```
+
+---
+
+## Host Accepts Answer
+
+```text
+User pastes answer string
+ ↓
+Signaling decodes answer
+ ↓
+Host sets remote description
+ ↓
+WebRTC connection completes
+ ↓
+DataChannel opens
+```
+
+---
+
+## Data Messaging
+
+```text
+Client.send(data)
+ ↓
+JSON.stringify(data)
+ ↓
+RTCDataChannel.send(message)
+ ↓
+Host receives message
+ ↓
+JSON.parse(message)
+ ↓
+Host emits "data"
+```
+
+The reverse direction works the same way.
+
+---
+
+# Multi-Client Architecture
+
+Multi-client support should be built by creating one WebRTC connection per client.
+
+Do not try to make one RTCDataChannel serve multiple clients.
+
+Correct model:
+
+```text
+Host
+├─ clientId: client-a → Connection
+├─ clientId: client-b → Connection
+└─ clientId: client-c → Connection
+```
+
+Public Host methods:
+
+```ts
+host.send(clientId, data);
+
+host.broadcast(data);
+
+host.disconnect(clientId);
+```
+
+Each client must complete manual signaling separately.
+
+This means each client needs its own offer/answer pair.
+
+---
+
+# Error Handling Policy
+
+PasteRTC should never crash the app because of user input.
+
+Handle errors such as:
+
+* Empty signal string
+* Invalid prefix
+* Invalid JSON
+* Offer pasted into answer field
+* Answer pasted into offer field
+* WebRTC connection failure
+* DataChannel not open
+* Malformed incoming message
+
+Errors should be emitted through:
+
+```ts
+on("error", handler)
+```
+
+and also returned or thrown when appropriate.
+
+---
+
+# What Should Stay Internal
+
+Users should not need to touch:
+
+* RTCPeerConnection
+* RTCDataChannel
+* RTCSessionDescription
+* ICE candidates
+* Raw SDP
+
+These details should remain inside the library.
+
+---
+
+# What Should Be Public
+
+Users should mainly interact with:
+
+```ts
+Host
+Client
+send()
+broadcast()
+on()
+close()
+createOffer()
+acceptOffer()
+acceptAnswer()
+```
+
+Controller helpers can be exposed later.
+
+---
+
+# Design Rules
+
+1. Start with a working demo before creating abstractions.
+2. Keep the first implementation small.
+3. Avoid dependencies unless they solve a real problem.
+4. Keep signaling manual and serverless.
+5. Keep copy-paste signaling available even if QR is added later.
+6. Host and Client should be simple to understand.
+7. Connection should hide raw WebRTC complexity.
+8. Multi-client support should use one Connection per client.
+9. Controller helpers should be optional.
+10. Do not build production infrastructure into the library.
+
+---
+
+# First Implementation Target
+
+The first implementation should only prove this:
+
+```text
+Browser A creates offer.
+Browser B accepts offer and creates answer.
+Browser A accepts answer.
+Browser A and Browser B exchange JSON messages.
+```
+
+Everything else comes later.
