@@ -451,6 +451,10 @@ Host
 Public Host methods:
 
 ```ts
+const offer = await host.createOffer(clientId);
+
+await host.acceptAnswer(clientId, answerText);
+
 host.send(clientId, data);
 
 host.broadcast(data);
