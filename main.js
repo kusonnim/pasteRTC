@@ -19,8 +19,11 @@ const clientAnswerOutput = document.querySelector("#client-answer");
 const hostStatus = document.querySelector("#host-status");
 const clientStatus = document.querySelector("#client-status");
 
+const hostClientIdInput = document.querySelector("#host-client-id");
 const hostMessageInput = document.querySelector("#host-message");
 const hostSendButton = document.querySelector("#host-send");
+const hostBroadcastButton = document.querySelector("#host-broadcast");
+const hostSendClientSelect = document.querySelector("#host-send-client");
 const hostMessageLog = document.querySelector("#host-message-log");
 const hostControllerLog = document.querySelector("#host-controller-log");
 const clientMessageInput = document.querySelector("#client-message");
@@ -49,6 +52,7 @@ const controllerControls = [
 
 let host;
 let client;
+let connectedClientIds = new Set();
 
 function selectMode(selectedMode) {
   modeButtons.forEach((button) => {
@@ -70,6 +74,45 @@ function updateStatus(statusElement, text, state = "idle") {
 function setMessagingEnabled(messageInput, sendButton, enabled) {
   messageInput.disabled = !enabled;
   sendButton.disabled = !enabled;
+}
+
+function updateHostMessagingEnabled() {
+  const hasConnectedClients = connectedClientIds.size > 0;
+
+  hostMessageInput.disabled = !hasConnectedClients;
+  hostSendButton.disabled = !hasConnectedClients;
+  hostBroadcastButton.disabled = !hasConnectedClients;
+  hostSendClientSelect.disabled = !hasConnectedClients;
+}
+
+function updateHostClientSelect() {
+  const selectedClientId = hostSendClientSelect.value;
+
+  hostSendClientSelect.replaceChildren();
+
+  if (connectedClientIds.size === 0) {
+    hostSendClientSelect.append(new Option("No connected clients", ""));
+  } else {
+    for (const clientId of connectedClientIds) {
+      hostSendClientSelect.append(new Option(clientId, clientId));
+    }
+
+    if (connectedClientIds.has(selectedClientId)) {
+      hostSendClientSelect.value = selectedClientId;
+    }
+  }
+
+  updateHostMessagingEnabled();
+}
+
+function getHostClientId() {
+  const clientId = hostClientIdInput.value.trim();
+
+  if (!clientId) {
+    throw new Error("Enter a client ID first.");
+  }
+
+  return clientId;
 }
 
 function setControllerEnabled(enabled) {
@@ -162,6 +205,29 @@ function createHost() {
   );
 
   peer
+    .on("clientConnected", (clientId) => {
+      connectedClientIds.add(clientId);
+      updateHostClientSelect();
+      updateStatus(
+        hostStatus,
+        `Connected clients: ${connectedClientIds.size}`,
+        "connected",
+      );
+    })
+    .on("clientDisconnected", (clientId) => {
+      connectedClientIds.delete(clientId);
+      updateHostClientSelect();
+
+      if (connectedClientIds.size === 0) {
+        updateStatus(hostStatus, "Not connected", "idle");
+      } else {
+        updateStatus(
+          hostStatus,
+          `Connected clients: ${connectedClientIds.size}`,
+          "connected",
+        );
+      }
+    })
     .on("button", (data, clientId) => {
       addControllerEventMessage(hostControllerLog, "button", data, clientId);
     })
@@ -201,7 +267,8 @@ function createClient() {
 }
 
 function closeHostConnection() {
-  setMessagingEnabled(hostMessageInput, hostSendButton, false);
+  connectedClientIds = new Set();
+  updateHostClientSelect();
   host?.close();
   host = undefined;
 }
@@ -215,17 +282,19 @@ function closeClientConnection() {
 
 async function createOffer() {
   createOfferButton.disabled = true;
-  closeHostConnection();
   hostOfferOutput.value = "";
-  updateStatus(hostStatus, "Creating offer...", "working");
 
   try {
-    host = createHost();
+    const clientId = getHostClientId();
 
-    hostOfferOutput.value = await host.createOffer();
-    updateStatus(hostStatus, "Waiting for answer", "working");
+    if (!host) {
+      host = createHost();
+    }
+
+    updateStatus(hostStatus, `Creating offer for ${clientId}...`, "working");
+    hostOfferOutput.value = await host.createOffer(clientId);
+    updateStatus(hostStatus, `Waiting for ${clientId} answer`, "working");
   } catch (error) {
-    closeHostConnection();
     updateStatus(hostStatus, error.message, "error");
   } finally {
     createOfferButton.disabled = false;
@@ -240,8 +309,10 @@ async function acceptAnswer() {
       throw new Error("Create an offer first.");
     }
 
-    await host.acceptAnswer(hostAnswerInput.value);
-    updateStatus(hostStatus, "Connecting...", "working");
+    const clientId = getHostClientId();
+
+    await host.acceptAnswer(clientId, hostAnswerInput.value);
+    updateStatus(hostStatus, `Connecting ${clientId}...`, "working");
   } catch (error) {
     updateStatus(hostStatus, error.message, "error");
   } finally {
@@ -290,6 +361,39 @@ function sendMessage(connection, messageInput, statusElement) {
   }
 }
 
+function sendHostMessage({ broadcast = false } = {}) {
+  const message = hostMessageInput.value.trim();
+
+  if (!message) {
+    return;
+  }
+
+  try {
+    if (!host) {
+      throw new Error("Channel is not open");
+    }
+
+    const data = JSON.stringify({ message });
+
+    if (broadcast) {
+      host.broadcast(data);
+    } else {
+      const clientId = hostSendClientSelect.value;
+
+      if (!clientId) {
+        throw new Error("Choose a connected client first.");
+      }
+
+      host.send(clientId, data);
+    }
+
+    hostMessageInput.value = "";
+    hostMessageInput.focus();
+  } catch (error) {
+    updateStatus(hostStatus, error.message, "error");
+  }
+}
+
 function sendControllerMessage(sendAction) {
   try {
     if (!client) {
@@ -315,7 +419,10 @@ createOfferButton.addEventListener("click", createOffer);
 acceptAnswerButton.addEventListener("click", acceptAnswer);
 createAnswerButton.addEventListener("click", createAnswer);
 hostSendButton.addEventListener("click", () => {
-  sendMessage(host, hostMessageInput, hostStatus);
+  sendHostMessage();
+});
+hostBroadcastButton.addEventListener("click", () => {
+  sendHostMessage({ broadcast: true });
 });
 clientSendButton.addEventListener("click", () => {
   sendMessage(client, clientMessageInput, clientStatus);

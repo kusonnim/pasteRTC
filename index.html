@@ -42,8 +42,16 @@
           </p>
         </div>
 
+        <label for="host-client-id">Client ID</label>
+        <input
+          id="host-client-id"
+          type="text"
+          value="client-1"
+          placeholder="Example: phone-1"
+        />
+
         <button class="primary-button" id="create-offer" type="button">
-          Create Offer
+          Create Offer for Client
         </button>
 
         <label for="host-offer">Offer</label>
@@ -67,6 +75,11 @@
 
         <div class="message-panel">
           <h3>Messages</h3>
+          <label for="host-send-client">Send target</label>
+          <select id="host-send-client" disabled>
+            <option value="">No connected clients</option>
+          </select>
+
           <label for="host-message">Message</label>
           <div class="message-compose">
             <input
@@ -76,6 +89,9 @@
               disabled
             />
             <button id="host-send" type="button" disabled>Send</button>
+            <button id="host-broadcast" type="button" disabled>
+              Broadcast
+            </button>
           </div>
 
           <p class="log-label">Received messages</p>

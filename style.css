@@ -24,6 +24,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -196,6 +197,7 @@ label {
 }
 
 input,
+select,
 textarea {
   display: block;
   width: 100%;
@@ -226,6 +228,7 @@ textarea::placeholder {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: #8177ff;
   box-shadow: 0 0 0 3px rgb(129 119 255 / 14%);
@@ -287,7 +290,7 @@ button:disabled {
 
 .message-compose {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 0.75rem;
 }
 
