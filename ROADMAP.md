@@ -156,7 +156,7 @@ Exit Criteria:
 
 Goal:
 
-Provide higher-level APIs for controller applications.
+Provide an optional controller extension on top of the generic communication core.
 
 Tasks:
 
@@ -165,6 +165,9 @@ Tasks:
 * Analog stick
 * Device orientation
 * Tilt streaming
+* Browser input bindings
+* Controller event routing
+* Extension architecture cleanup
 
 Example:
 
@@ -181,6 +184,51 @@ client.sendTilt({
 Exit Criteria:
 
 * Building a phone controller requires almost no manual message formatting.
+* Controller-specific code lives outside the generic core.
+* The core does not depend on the controller extension.
+
+---
+
+## Phase 4-D — Extension Architecture Refactor
+
+Goal:
+
+Separate generic communication code from optional extension code.
+
+Tasks:
+
+* Move generic WebRTC communication into `src/core/`.
+* Move controller-specific behavior into `src/extensions/controller/`.
+* Preserve existing public imports through compatibility re-exports.
+* Keep dependencies flowing only from extensions to core.
+
+Exit Criteria:
+
+* Core remains generic and reusable.
+* Controller functionality lives entirely under the controller extension.
+* Existing demo behavior remains unchanged.
+* All tests continue passing.
+
+---
+
+## Phase 5 — Library Packaging
+
+Goal:
+
+Prepare PasteRTC to be consumed as a library.
+
+Tasks:
+
+* Define public entry points.
+* Add package metadata.
+* Preserve browser-friendly static usage.
+* Document import paths.
+* Keep core and extensions separately understandable.
+
+Exit Criteria:
+
+* Developers can clearly import the core library and optional extensions.
+* Existing static demo behavior remains unchanged.
 
 ---
 
@@ -188,12 +236,11 @@ Exit Criteria:
 
 Goal:
 
-Improve usability while remaining serverless.
+Improve usability while remaining serverless, with QR as an optional signaling extension.
 
 Tasks:
 
 * Better signaling format
-* Optional compression
 * Optional QR signaling
 * Signal validation
 
@@ -205,6 +252,7 @@ Requirements:
 Exit Criteria:
 
 * Users can choose between copy-paste and QR signaling.
+* Copy-paste signaling remains available and unchanged.
 
 ---
 
@@ -222,6 +270,7 @@ Tasks:
 * Logging
 * Documentation
 * Examples
+* Release checklist
 
 Exit Criteria:
 
@@ -255,6 +304,7 @@ Possible future features:
 
 * Binary messaging
 * File transfer
+* Compression
 * Reliable/unreliable channel configuration
 * Plugin system
 * Automatic QR scanning

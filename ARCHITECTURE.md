@@ -81,9 +81,63 @@ Core modules must not import extension modules. Top-level files such as
 `src/host.js`, `src/client.js`, and `src/browser-input.js` are compatibility
 re-export files for the current public API.
 
+The dependency rule is:
+
+```text
+extensions → core
+```
+
+Core must never depend on extensions.
+
 ---
 
 # Module Responsibilities
+
+## Core Modules
+
+Core modules provide generic browser-to-browser communication. They should not
+know about controller inputs, QR codes, debugging tools, file transfer, gamepad
+APIs, or any other optional feature layer.
+
+Core includes:
+
+* Host
+* Client
+* Connection
+* Signaling
+* Events
+* Utilities
+
+Core code lives under:
+
+```text
+src/core/
+```
+
+## Extension Modules
+
+Extensions are optional feature layers built on top of the public Core API.
+Extensions may import from Core, but Core must never import from Extensions.
+
+Initial and future extensions include:
+
+* Controller extension
+* QR signaling extension
+* Debug extension
+* File transfer extension
+* Gamepad extension
+
+Extension code lives under:
+
+```text
+src/extensions/
+```
+
+The first extension is the Controller extension:
+
+```text
+src/extensions/controller/
+```
 
 ## Host
 

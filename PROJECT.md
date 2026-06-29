@@ -12,6 +12,8 @@ After signaling is complete, browsers communicate directly through WebRTC DataCh
 
 The primary use case is turning a phone browser into a controller for a desktop browser, but the library should remain generic and reusable.
 
+PasteRTC is organized as a generic browser-to-browser communication core with optional extensions layered on top. The core should stay useful without any controller, QR, debug, file-transfer, or gamepad-specific features.
+
 ---
 
 # Core Principles
@@ -207,6 +209,8 @@ client.sendTilt({
     gamma
 });
 ```
+
+Controller helpers are an optional extension built on top of the generic communication core.
 
 ---
 
