@@ -305,6 +305,41 @@ button:disabled {
   font-weight: 700;
 }
 
+.controller-actions,
+.controller-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.controller-actions {
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 1rem;
+}
+
+.controller-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.controller-grid:has(> :nth-child(3)) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.controller-actions button,
+.controller-wide-button {
+  min-height: 2.75rem;
+  border: 1px solid #343a4d;
+  border-radius: 0.75rem;
+  color: inherit;
+  background: #1a1f2d;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.controller-wide-button {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
 .log-label {
   margin: 1.5rem 0 0.55rem;
   color: #cbd1df;
@@ -356,6 +391,12 @@ button:disabled {
   }
 
   .message-compose {
+    grid-template-columns: 1fr;
+  }
+
+  .controller-actions,
+  .controller-grid,
+  .controller-grid:has(> :nth-child(3)) {
     grid-template-columns: 1fr;
   }
 }

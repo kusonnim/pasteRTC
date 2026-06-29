@@ -22,9 +22,30 @@ const clientStatus = document.querySelector("#client-status");
 const hostMessageInput = document.querySelector("#host-message");
 const hostSendButton = document.querySelector("#host-send");
 const hostMessageLog = document.querySelector("#host-message-log");
+const hostControllerLog = document.querySelector("#host-controller-log");
 const clientMessageInput = document.querySelector("#client-message");
 const clientSendButton = document.querySelector("#client-send");
 const clientMessageLog = document.querySelector("#client-message-log");
+const clientButtonADown = document.querySelector("#client-button-a-down");
+const clientButtonAUp = document.querySelector("#client-button-a-up");
+const clientStickX = document.querySelector("#client-stick-x");
+const clientStickY = document.querySelector("#client-stick-y");
+const clientSendStickButton = document.querySelector("#client-send-stick");
+const clientTiltAlpha = document.querySelector("#client-tilt-alpha");
+const clientTiltBeta = document.querySelector("#client-tilt-beta");
+const clientTiltGamma = document.querySelector("#client-tilt-gamma");
+const clientSendTiltButton = document.querySelector("#client-send-tilt");
+const controllerControls = [
+  clientButtonADown,
+  clientButtonAUp,
+  clientStickX,
+  clientStickY,
+  clientSendStickButton,
+  clientTiltAlpha,
+  clientTiltBeta,
+  clientTiltGamma,
+  clientSendTiltButton,
+];
 
 let host;
 let client;
@@ -51,22 +72,48 @@ function setMessagingEnabled(messageInput, sendButton, enabled) {
   sendButton.disabled = !enabled;
 }
 
-function addReceivedMessage(messageLog, data) {
+function setControllerEnabled(enabled) {
+  controllerControls.forEach((control) => {
+    control.disabled = !enabled;
+  });
+}
+
+function addLogMessage(messageLog, text, className) {
   const item = document.createElement("li");
 
-  try {
-    const parsedMessage = JSON.parse(data);
-    item.textContent =
-      typeof parsedMessage.message === "string"
-        ? parsedMessage.message
-        : JSON.stringify(parsedMessage);
-  } catch {
-    item.textContent = "Received invalid JSON.";
-    item.classList.add("message-error");
+  item.textContent = text;
+
+  if (className) {
+    item.classList.add(className);
   }
 
   messageLog.append(item);
   messageLog.scrollTop = messageLog.scrollHeight;
+}
+
+function addReceivedMessage(messageLog, data) {
+  let text;
+  let className;
+
+  try {
+    const parsedMessage = JSON.parse(data);
+    text =
+      typeof parsedMessage.message === "string"
+        ? parsedMessage.message
+        : JSON.stringify(parsedMessage);
+  } catch {
+    text = "Received invalid JSON.";
+    className = "message-error";
+  }
+
+  addLogMessage(messageLog, text, className);
+}
+
+function addControllerEventMessage(messageLog, eventName, data, clientId) {
+  addLogMessage(
+    messageLog,
+    `${eventName} from ${clientId}: ${JSON.stringify(data)}`,
+  );
 }
 
 function createPeer(
@@ -105,6 +152,54 @@ function createPeer(
   return peer;
 }
 
+function createHost() {
+  const peer = createPeer(
+    Host,
+    hostStatus,
+    hostMessageInput,
+    hostSendButton,
+    hostMessageLog,
+  );
+
+  peer
+    .on("button", (data, clientId) => {
+      addControllerEventMessage(hostControllerLog, "button", data, clientId);
+    })
+    .on("stick", (data, clientId) => {
+      addControllerEventMessage(hostControllerLog, "stick", data, clientId);
+    })
+    .on("tilt", (data, clientId) => {
+      addControllerEventMessage(hostControllerLog, "tilt", data, clientId);
+    });
+
+  return peer;
+}
+
+function createClient() {
+  const peer = createPeer(
+    Client,
+    clientStatus,
+    clientMessageInput,
+    clientSendButton,
+    clientMessageLog,
+  );
+
+  peer
+    .on("connected", () => {
+      setControllerEnabled(true);
+    })
+    .on("statechange", (state) => {
+      if (state === "disconnected" || state === "closed") {
+        setControllerEnabled(false);
+      }
+    })
+    .on("error", () => {
+      setControllerEnabled(false);
+    });
+
+  return peer;
+}
+
 function closeHostConnection() {
   setMessagingEnabled(hostMessageInput, hostSendButton, false);
   host?.close();
@@ -113,6 +208,7 @@ function closeHostConnection() {
 
 function closeClientConnection() {
   setMessagingEnabled(clientMessageInput, clientSendButton, false);
+  setControllerEnabled(false);
   client?.close();
   client = undefined;
 }
@@ -124,13 +220,7 @@ async function createOffer() {
   updateStatus(hostStatus, "Creating offer...", "working");
 
   try {
-    host = createPeer(
-      Host,
-      hostStatus,
-      hostMessageInput,
-      hostSendButton,
-      hostMessageLog,
-    );
+    host = createHost();
 
     hostOfferOutput.value = await host.createOffer();
     updateStatus(hostStatus, "Waiting for answer", "working");
@@ -166,13 +256,7 @@ async function createAnswer() {
   updateStatus(clientStatus, "Creating answer...", "working");
 
   try {
-    client = createPeer(
-      Client,
-      clientStatus,
-      clientMessageInput,
-      clientSendButton,
-      clientMessageLog,
-    );
+    client = createClient();
 
     clientAnswerOutput.value = await client.acceptOffer(
       clientOfferInput.value,
@@ -206,6 +290,22 @@ function sendMessage(connection, messageInput, statusElement) {
   }
 }
 
+function sendControllerMessage(sendAction) {
+  try {
+    if (!client) {
+      throw new Error("Channel is not open");
+    }
+
+    sendAction();
+  } catch (error) {
+    updateStatus(clientStatus, error.message, "error");
+  }
+}
+
+function getNumberInput(input) {
+  return Number.parseFloat(input.value);
+}
+
 modeButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => selectMode(button.dataset.mode));
@@ -219,4 +319,27 @@ hostSendButton.addEventListener("click", () => {
 });
 clientSendButton.addEventListener("click", () => {
   sendMessage(client, clientMessageInput, clientStatus);
+});
+clientButtonADown.addEventListener("click", () => {
+  sendControllerMessage(() => client.sendButton("A", true));
+});
+clientButtonAUp.addEventListener("click", () => {
+  sendControllerMessage(() => client.sendButton("A", false));
+});
+clientSendStickButton.addEventListener("click", () => {
+  sendControllerMessage(() =>
+    client.sendStick({
+      x: getNumberInput(clientStickX),
+      y: getNumberInput(clientStickY),
+    }),
+  );
+});
+clientSendTiltButton.addEventListener("click", () => {
+  sendControllerMessage(() =>
+    client.sendTilt({
+      alpha: getNumberInput(clientTiltAlpha),
+      beta: getNumberInput(clientTiltBeta),
+      gamma: getNumberInput(clientTiltGamma),
+    }),
+  );
 });
