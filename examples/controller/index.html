@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PasteRTC Controller Example</title>
+    <link rel="stylesheet" href="../shared.css">
+  </head>
+  <body>
+    <main>
+      <h1>PasteRTC Controller Example</h1>
+      <p class="hint">
+        Uses the Controller extension for button, stick, and tilt messages.
+      </p>
+
+      <section id="mode-panel">
+        <h2>Choose mode</h2>
+        <div class="row">
+          <button id="host-mode" type="button">Host mode</button>
+          <button id="client-mode" type="button">Client mode</button>
+        </div>
+      </section>
+
+      <section id="host-panel" class="hidden">
+        <h2>Controller Host</h2>
+        <p>Status: <span id="host-status" class="status">idle</span></p>
+        <button id="create-offer" type="button">Create Offer</button>
+
+        <label>
+          Offer
+          <textarea id="offer-output" readonly></textarea>
+        </label>
+
+        <label>
+          Answer input
+          <textarea id="answer-input"></textarea>
+        </label>
+
+        <button id="accept-answer" type="button">Accept Answer</button>
+
+        <h3>Controller events</h3>
+        <pre id="host-log" class="log"></pre>
+      </section>
+
+      <section id="client-panel" class="hidden">
+        <h2>Controller Client</h2>
+        <p>Status: <span id="client-status" class="status">idle</span></p>
+
+        <label>
+          Offer input
+          <textarea id="offer-input"></textarea>
+        </label>
+
+        <button id="create-answer" type="button">Create Answer</button>
+
+        <label>
+          Answer
+          <textarea id="answer-output" readonly></textarea>
+        </label>
+
+        <div class="grid">
+          <div class="panel">
+            <h3>Button helper</h3>
+            <button id="button-a" type="button">Hold A</button>
+            <button id="button-b" type="button">Bound B button</button>
+          </div>
+
+          <div class="panel">
+            <h3>Stick helper</h3>
+            <label>
+              X
+              <input id="stick-x" type="range" min="-1" max="1" step="0.1" value="0">
+            </label>
+            <label>
+              Y
+              <input id="stick-y" type="range" min="-1" max="1" step="0.1" value="0">
+            </label>
+            <button id="send-stick" type="button">Send Stick</button>
+          </div>
+
+          <div class="panel">
+            <h3>Tilt helper</h3>
+            <div class="row">
+              <button id="send-tilt" type="button">Send Sample Tilt</button>
+              <button id="start-tilt" type="button">Start Device Tilt</button>
+              <button id="stop-tilt" type="button">Stop Device Tilt</button>
+            </div>
+            <p class="hint">
+              Device tilt usually requires a mobile browser and HTTPS.
+            </p>
+          </div>
+        </div>
+
+        <h3>Client log</h3>
+        <pre id="client-log" class="log"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
+

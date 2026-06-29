@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PasteRTC Multi-Client Example</title>
+    <link rel="stylesheet" href="../shared.css">
+  </head>
+  <body>
+    <main>
+      <h1>PasteRTC Multi-Client Example</h1>
+      <p class="hint">
+        Each client completes its own manual offer/answer flow with the same Host.
+      </p>
+
+      <section id="mode-panel">
+        <h2>Choose mode</h2>
+        <div class="row">
+          <button id="host-mode" type="button">Host mode</button>
+          <button id="client-mode" type="button">Client mode</button>
+        </div>
+      </section>
+
+      <section id="host-panel" class="hidden">
+        <h2>Host</h2>
+        <p>Status: <span id="host-status" class="status">idle</span></p>
+
+        <label>
+          Client ID
+          <input id="client-id" type="text" value="client-a">
+        </label>
+
+        <button id="create-offer" type="button">Create Offer for Client ID</button>
+
+        <label>
+          Offer
+          <textarea id="offer-output" readonly></textarea>
+        </label>
+
+        <label>
+          Answer input
+          <textarea id="answer-input"></textarea>
+        </label>
+
+        <button id="accept-answer" type="button">Accept Answer for Client ID</button>
+
+        <div class="panel">
+          <h3>Connected clients</h3>
+          <select id="connected-clients"></select>
+        </div>
+
+        <div class="panel">
+          <h3>Send JSON</h3>
+          <div class="row">
+            <input id="host-message" type="text" value="Hello from host">
+            <button id="send-selected" type="button">Send to Selected</button>
+            <button id="broadcast" type="button">Broadcast</button>
+          </div>
+        </div>
+
+        <h3>Host log</h3>
+        <pre id="host-log" class="log"></pre>
+      </section>
+
+      <section id="client-panel" class="hidden">
+        <h2>Client</h2>
+        <p>Status: <span id="client-status" class="status">idle</span></p>
+
+        <label>
+          Offer input
+          <textarea id="offer-input"></textarea>
+        </label>
+
+        <button id="create-answer" type="button">Create Answer</button>
+
+        <label>
+          Answer
+          <textarea id="answer-output" readonly></textarea>
+        </label>
+
+        <div class="panel">
+          <h3>Send JSON to Host</h3>
+          <div class="row">
+            <input id="client-message" type="text" value="Hello from client">
+            <button id="client-send" type="button">Send</button>
+          </div>
+        </div>
+
+        <h3>Client log</h3>
+        <pre id="client-log" class="log"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
+
