@@ -33,4 +33,50 @@ export class Client extends Peer {
     const answer = await createAnswerDescription(this);
     return encodeAnswer(answer);
   }
+
+  /**
+   * Sends a controller button event.
+   *
+   * @param {string} key
+   * @param {boolean} pressed
+   */
+  sendButton(key, pressed) {
+    this.send(JSON.stringify({
+      type: "button",
+      key,
+      pressed,
+    }));
+  }
+
+  /**
+   * Sends a controller stick position.
+   *
+   * @param {object} position
+   * @param {number} position.x
+   * @param {number} position.y
+   */
+  sendStick({ x, y }) {
+    this.send(JSON.stringify({
+      type: "stick",
+      x,
+      y,
+    }));
+  }
+
+  /**
+   * Sends device tilt values.
+   *
+   * @param {object} tilt
+   * @param {number} tilt.alpha
+   * @param {number} tilt.beta
+   * @param {number} tilt.gamma
+   */
+  sendTilt({ alpha, beta, gamma }) {
+    this.send(JSON.stringify({
+      type: "tilt",
+      alpha,
+      beta,
+      gamma,
+    }));
+  }
 }

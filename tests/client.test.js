@@ -13,7 +13,15 @@ describe("Client", () => {
   test("creates an instance with the stable public API", () => {
     const client = new Client();
 
-    for (const method of ["acceptOffer", "send", "close", "on"]) {
+    for (const method of [
+      "acceptOffer",
+      "send",
+      "sendButton",
+      "sendStick",
+      "sendTilt",
+      "close",
+      "on",
+    ]) {
       assert.equal(typeof client[method], "function");
     }
 
@@ -63,6 +71,36 @@ describe("Client", () => {
       "connected",
       "payload",
       "Channel error",
+    ]);
+  });
+
+  test("sends controller helper messages as JSON strings", () => {
+    const client = new Client();
+    const peer = latestPeerConnection();
+    const channel = peer.receiveDataChannel();
+    channel.open();
+
+    client.sendButton("A", true);
+    client.sendStick({ x: 0.5, y: -0.25 });
+    client.sendTilt({ alpha: 1, beta: 2, gamma: 3 });
+
+    assert.deepEqual(channel.sent.map((message) => JSON.parse(message)), [
+      {
+        type: "button",
+        key: "A",
+        pressed: true,
+      },
+      {
+        type: "stick",
+        x: 0.5,
+        y: -0.25,
+      },
+      {
+        type: "tilt",
+        alpha: 1,
+        beta: 2,
+        gamma: 3,
+      },
     ]);
   });
 });
