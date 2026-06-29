@@ -3,22 +3,26 @@ import { describe, test } from "node:test";
 
 import {
   Client,
-  Connection,
-  decodeAnswer,
-  decodeOffer,
-  encodeAnswer,
-  encodeOffer,
+  Controller,
   Host,
 } from "../src/index.js";
 
 describe("Core entry point", () => {
-  test("re-exports the generic core public API", () => {
+  test("re-exports only the stable public API", async () => {
+    const publicApi = await import("../src/index.js");
+
     assert.equal(typeof Host, "function");
     assert.equal(typeof Client, "function");
-    assert.equal(typeof Connection, "function");
-    assert.equal(typeof encodeOffer, "function");
-    assert.equal(typeof decodeOffer, "function");
-    assert.equal(typeof encodeAnswer, "function");
-    assert.equal(typeof decodeAnswer, "function");
+    assert.equal(typeof Controller, "object");
+    assert.equal(typeof Controller.Host, "function");
+    assert.equal(typeof Controller.Client, "function");
+    assert.equal(typeof Controller.createTiltController, "function");
+    assert.equal(typeof Controller.bindButton, "function");
+
+    assert.deepEqual(Object.keys(publicApi).sort(), [
+      "Client",
+      "Controller",
+      "Host",
+    ]);
   });
 });
