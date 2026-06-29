@@ -19,6 +19,13 @@ describe("Core entry point", () => {
     assert.equal(typeof Controller.createTiltController, "function");
     assert.equal(typeof Controller.bindButton, "function");
 
+    assert.deepEqual(Object.keys(Controller).sort(), [
+      "Client",
+      "Host",
+      "bindButton",
+      "createTiltController",
+    ]);
+
     assert.deepEqual(Object.keys(publicApi).sort(), [
       "Client",
       "Controller",

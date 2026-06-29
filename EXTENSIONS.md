@@ -63,6 +63,24 @@ Controller code lives under:
 src/extensions/controller/
 ```
 
+The official public Controller surface is exposed through `src/index.js`:
+
+```ts
+import { Controller } from "./src/index.js";
+```
+
+Public Controller exports:
+
+```ts
+Controller.Host
+Controller.Client
+Controller.createTiltController(client, options?)
+Controller.bindButton(client, element, key, options?)
+```
+
+Implementation classes and low-level helpers should stay internal unless they
+are intentionally promoted into the public API.
+
 ---
 
 # Future Extension Examples
@@ -92,5 +110,6 @@ When adding a new extension:
 5. Add tests for extension behavior.
 6. Keep networking, signaling, and WebRTC behavior unchanged unless the phase explicitly allows it.
 7. Document the extension and its public API.
+8. Export only stable extension APIs through the public entry point.
 
 Extensions should be small, focused, and removable without breaking Core.

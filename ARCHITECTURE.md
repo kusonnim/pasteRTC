@@ -629,21 +629,109 @@ These details should remain inside the library.
 
 # What Should Be Public
 
-Users should mainly interact with:
+The official public entry point is:
+
+```ts
+import { Host, Client, Controller } from "./src/index.js";
+```
+
+The public API should stay intentionally small.
+
+## Public Core API
+
+Core exports:
 
 ```ts
 Host
 Client
-send()
-broadcast()
-on()
-close()
-createOffer()
-acceptOffer()
-acceptAnswer()
 ```
 
-Controller helpers can be exposed later.
+`Host` public methods:
+
+```ts
+host.createOffer(clientId?)
+host.acceptAnswer(answerText)
+host.acceptAnswer(clientId, answerText)
+host.send(data)
+host.send(clientId, data)
+host.broadcast(data)
+host.disconnect(clientId?)
+host.close()
+host.on(eventName, handler)
+```
+
+Core `Host` public events:
+
+```text
+connected
+data
+statechange
+error
+clientConnected
+clientDisconnected
+```
+
+`Client` public methods:
+
+```ts
+client.acceptOffer(offerText)
+client.send(data)
+client.close()
+client.on(eventName, handler)
+```
+
+Core `Client` public events:
+
+```text
+connected
+data
+statechange
+error
+```
+
+## Public Controller Extension API
+
+Controller extension APIs are exposed through the `Controller` namespace:
+
+```ts
+Controller.Host
+Controller.Client
+Controller.createTiltController(client, options?)
+Controller.bindButton(client, element, key, options?)
+```
+
+`Controller.Host` supports the Core `Host` API and adds controller events:
+
+```text
+button
+stick
+tilt
+```
+
+`Controller.Client` supports the Core `Client` API and adds:
+
+```ts
+client.sendButton(key, pressed)
+client.sendStick({ x, y })
+client.sendTilt({ alpha, beta, gamma })
+client.createTiltController(options?)
+client.bindButton(element, key, options?)
+```
+
+Top-level files such as `src/host.js` and `src/client.js` are compatibility
+entry points for the demo and earlier phases. New library consumers should use
+`src/index.js`.
+
+Do not expose internal implementation details from `src/index.js`.
+
+Internal modules include:
+
+* Connection
+* Signaling utilities
+* Peer internals
+* Event internals
+* Utility modules
+* Controller helper implementation classes such as `ButtonBinding` and `TiltController`
 
 ---
 
