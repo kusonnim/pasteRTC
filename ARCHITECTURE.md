@@ -54,6 +54,33 @@ PasteRTC
 
 Each module has a clear responsibility.
 
+Current organization separates generic networking from optional extensions:
+
+```text
+src/
+├─ core/
+│  ├─ host.js
+│  ├─ client.js
+│  ├─ connection.js
+│  ├─ peer.js
+│  └─ signaling.js
+└─ extensions/
+   └─ controller/
+      ├─ host.js
+      ├─ client.js
+      └─ browser-input.js
+```
+
+Dependencies flow in one direction only:
+
+```text
+extensions → core
+```
+
+Core modules must not import extension modules. Top-level files such as
+`src/host.js`, `src/client.js`, and `src/browser-input.js` are compatibility
+re-export files for the current public API.
+
 ---
 
 # Module Responsibilities
@@ -300,6 +327,12 @@ They should not be required for basic communication.
 Browser integration helpers are optional and should stay separate from
 networking code. They should forward browser input into the existing controller
 helpers instead of formatting or sending messages directly.
+
+Controller-specific code lives under:
+
+```text
+src/extensions/controller/
+```
 
 ---
 

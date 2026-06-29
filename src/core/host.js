@@ -1,0 +1,287 @@
+import {
+  acceptAnswerDescription,
+  createOfferDescription,
+  Peer,
+} from "./peer.js";
+import { decodeAnswer, encodeOffer } from "./signaling.js";
+
+const PRIMARY_CLIENT_ID = "primary";
+const SUPPORTED_EVENTS = new Set([
+  "connected",
+  "data",
+  "statechange",
+  "error",
+  "clientConnected",
+  "clientDisconnected",
+]);
+
+const CALLBACK_EVENTS = {
+  onOpen: "connected",
+  onMessage: "data",
+  onStateChange: "statechange",
+  onError: "error",
+  onClientConnected: "clientConnected",
+  onClientDisconnected: "clientDisconnected",
+};
+
+/**
+ * The generic host side of one or more independent PasteRTC connections.
+ */
+export class Host {
+  static supportedEvents = SUPPORTED_EVENTS;
+  static callbackEvents = CALLBACK_EVENTS;
+
+  #clients = new Map();
+  #listeners = new Map();
+
+  /**
+   * @param {object} [callbacks]
+   * @param {(clientId: string) => void} [callbacks.onOpen]
+   * @param {(data: string, clientId: string) => void} [callbacks.onMessage]
+   * @param {(state: string, clientId: string) => void} [callbacks.onStateChange]
+   * @param {(error: Error, clientId: string) => void} [callbacks.onError]
+   * @param {(clientId: string) => void} [callbacks.onClientConnected]
+   * @param {(clientId: string) => void} [callbacks.onClientDisconnected]
+   */
+  constructor(callbacks = {}) {
+    for (const [callbackName, eventName] of Object.entries(
+      this.constructor.callbackEvents,
+    )) {
+      const callback = callbacks[callbackName];
+
+      if (typeof callback === "function") {
+        this.on(eventName, callback);
+      }
+    }
+
+    this.#addClient(PRIMARY_CLIENT_ID);
+  }
+
+  /**
+   * Registers a listener for a host event.
+   *
+   * Supported core events: `connected`, `data`, `statechange`, `error`,
+   * `clientConnected`, and `clientDisconnected`.
+   *
+   * @param {string} eventName
+   * @param {Function} callback
+   * @returns {this}
+   */
+  on(eventName, callback) {
+    if (!this.constructor.supportedEvents.has(eventName)) {
+      throw new Error(`Unsupported event: ${eventName}`);
+    }
+
+    if (typeof callback !== "function") {
+      throw new TypeError("Event callback must be a function.");
+    }
+
+    const listeners = this.#listeners.get(eventName) ?? new Set();
+    listeners.add(callback);
+    this.#listeners.set(eventName, listeners);
+    return this;
+  }
+
+  /**
+   * Creates a copy-paste offer for one client after ICE gathering completes.
+   *
+   * @param {string} [clientId="primary"]
+   * @returns {Promise<string>}
+   */
+  async createOffer(clientId = PRIMARY_CLIENT_ID) {
+    const client = this.#getOrAddClient(clientId);
+    const offer = await createOfferDescription(client.peer);
+    client.awaitingAnswer = true;
+    return encodeOffer(offer);
+  }
+
+  /**
+   * Applies a copy-paste answer from the client.
+   *
+   * Supports `acceptAnswer(answerText)` for the primary client and
+   * `acceptAnswer(clientId, answerText)` for a specific client.
+   *
+   * @param {string} clientIdOrAnswer
+   * @param {string} [answerText]
+   * @returns {Promise<void>}
+   */
+  async acceptAnswer(clientIdOrAnswer, answerText) {
+    const [clientId, signalText] =
+      answerText === undefined
+        ? [this.#getDefaultAnswerClientId(), clientIdOrAnswer]
+        : [clientIdOrAnswer, answerText];
+    const answer = decodeAnswer(signalText);
+    const client = this.#getClient(clientId);
+    await acceptAnswerDescription(client.peer, answer);
+    client.awaitingAnswer = false;
+  }
+
+  /**
+   * Sends a raw string to one client.
+   *
+   * Supports `send(data)` for the primary client and
+   * `send(clientId, data)` for a specific client.
+   *
+   * @param {string} clientIdOrData
+   * @param {string} [data]
+   */
+  send(clientIdOrData, data) {
+    const [clientId, message] =
+      data === undefined
+        ? [PRIMARY_CLIENT_ID, clientIdOrData]
+        : [clientIdOrData, data];
+    this.#getClient(clientId).peer.send(message);
+  }
+
+  /**
+   * Sends a raw string to every connected client.
+   *
+   * @param {string} data
+   */
+  broadcast(data) {
+    for (const client of this.#clients.values()) {
+      if (client.connected) {
+        client.peer.send(data);
+      }
+    }
+  }
+
+  /**
+   * Disconnects and removes one client.
+   *
+   * @param {string} [clientId="primary"]
+   * @returns {boolean} Whether a client was removed.
+   */
+  disconnect(clientId = PRIMARY_CLIENT_ID) {
+    this.#assertClientId(clientId);
+    const client = this.#clients.get(clientId);
+
+    if (!client) {
+      return false;
+    }
+
+    client.peer.close();
+    this.#removeClient(clientId, client);
+    return true;
+  }
+
+  /** Closes every connection owned by the host. */
+  close() {
+    for (const clientId of [...this.#clients.keys()]) {
+      this.disconnect(clientId);
+    }
+  }
+
+  /** @internal */
+  _handleMessage(_data, _clientId) {}
+
+  /** @internal */
+  _emit(eventName, ...args) {
+    for (const listener of this.#listeners.get(eventName) ?? []) {
+      listener(...args);
+    }
+  }
+
+  #getOrAddClient(clientId) {
+    this.#assertClientId(clientId);
+    return this.#clients.get(clientId) ?? this.#addClient(clientId);
+  }
+
+  #getDefaultAnswerClientId() {
+    const pendingClientIds = [];
+
+    for (const [clientId, client] of this.#clients) {
+      if (client.awaitingAnswer) {
+        pendingClientIds.push(clientId);
+      }
+    }
+
+    if (this.#clients.get(PRIMARY_CLIENT_ID)?.awaitingAnswer) {
+      return PRIMARY_CLIENT_ID;
+    }
+
+    if (pendingClientIds.length === 1) {
+      return pendingClientIds[0];
+    }
+
+    if (pendingClientIds.length > 1) {
+      throw new Error(
+        "Multiple clients are waiting for answers. Use acceptAnswer(clientId, answerText).",
+      );
+    }
+
+    return PRIMARY_CLIENT_ID;
+  }
+
+  #getClient(clientId) {
+    this.#assertClientId(clientId);
+    const client = this.#clients.get(clientId);
+
+    if (!client) {
+      throw new Error(`Unknown client: ${clientId}`);
+    }
+
+    return client;
+  }
+
+  #addClient(clientId) {
+    this.#assertClientId(clientId);
+
+    const client = {
+      connected: false,
+      disconnected: false,
+      awaitingAnswer: false,
+      peer: undefined,
+    };
+
+    client.peer = new Peer("host", {
+      onOpen: () => {
+        client.connected = true;
+        this._emit("connected", clientId);
+        this._emit("clientConnected", clientId);
+      },
+      onMessage: (data) => {
+        this._emit("data", data, clientId);
+        this._handleMessage(data, clientId);
+      },
+      onStateChange: (state) => {
+        this._emit("statechange", state, clientId);
+
+        if (state === "disconnected" || state === "closed") {
+          this.#removeClient(clientId, client);
+        }
+      },
+      onError: (error) => {
+        this._emit("error", error, clientId);
+      },
+    });
+
+    this.#clients.set(clientId, client);
+    return client;
+  }
+
+  #emitClientDisconnected(clientId, client) {
+    if (!client.connected || client.disconnected) {
+      return;
+    }
+
+    client.disconnected = true;
+    client.connected = false;
+    this._emit("clientDisconnected", clientId);
+  }
+
+  #removeClient(clientId, client) {
+    if (this.#clients.get(clientId) !== client) {
+      return;
+    }
+
+    this.#clients.delete(clientId);
+    this.#emitClientDisconnected(clientId, client);
+  }
+
+  #assertClientId(clientId) {
+    if (typeof clientId !== "string" || !clientId.trim()) {
+      throw new TypeError("Client ID must be a non-empty string.");
+    }
+  }
+}
