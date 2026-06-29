@@ -15,6 +15,8 @@ Then open one of the example pages:
 * `examples/controller/` — Controller extension helpers and typed host events.
 * `examples/multi-client/` — One Host managing multiple Clients with send and broadcast.
 
+* `examples/qr/` - Core Host and Client with optional QR signaling helpers.
+
 Each example keeps signaling manual:
 
 1. Open a Host page.
@@ -26,3 +28,6 @@ Each example keeps signaling manual:
 For multi-client testing, repeat the offer/answer flow once per client using a
 different client ID.
 
+For QR testing, keep the text areas available as a copy-paste fallback while
+using the QR canvases and camera scanners to transfer the same offer and answer
+strings.

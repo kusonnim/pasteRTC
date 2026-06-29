@@ -34,7 +34,7 @@ The only allowed signaling mechanism is manual transfer of signaling data.
 Examples:
 
 * Copy and paste
-* QR codes (future)
+* QR codes through the optional QR Extension
 * File transfer (future)
 
 ---
@@ -226,6 +226,7 @@ Useful examples include:
 basic/
 controller/
 multi-client/
+qr/
 ```
 
 Basic example:
@@ -247,6 +248,15 @@ Multi-client example:
 * Show connected clients
 * Send to one client
 * Broadcast to all clients
+
+QR example:
+
+* Create an offer with Core
+* Render the offer with QR Extension
+* Scan the offer with QR Extension
+* Create an answer with Core
+* Render and scan the answer with QR Extension
+* Exchange messages over the Core DataChannel
 
 ---
 
@@ -323,17 +333,48 @@ Goals:
 
 ## Step 6
 
-Improve signaling UX.
+Improve signaling UX. Completed by the QR Extension.
+
+Implemented:
+
+* Optional QR Extension for transferring offer/answer strings
+* QR encode/display helpers
+* QR scan/decode helpers
+* QR signaling example
 
 Possible future additions:
 
-* QR-based signaling
 * Compression
 * Signal chunking
 
-These features must remain optional.
+These features must remain optional UI/helper layers on top of the Core
+signaling strings.
 
 Manual copy-paste signaling must continue to work.
+
+QR must not replace copy-paste signaling. The baseline flow remains copying an
+offer string to the client and copying an answer string back to the host. A QR
+Extension may make that transfer easier by encoding and displaying existing
+offer/answer strings as QR codes, and by scanning and decoding those strings
+back into text.
+
+QR Extension code lives under:
+
+```text
+src/extensions/qr/
+```
+
+The QR Extension is consumed separately from Core:
+
+```js
+import { generate, scan } from "paste-rtc/qr";
+```
+
+The QR Extension may be used with Core-generated offer and answer strings, but
+it does not know about Host, Client, Offer, Answer, or WebRTC. Core must not
+depend on the QR Extension. If offer or answer strings become too long for
+practical QR transfer, QR-specific chunking can be planned later without
+changing the Core copy-paste signaling model.
 
 ---
 

@@ -46,6 +46,7 @@ Good examples:
 Bad examples:
 
 * Add Host, Client, QR signaling, and multi-client support in one change.
+* Replace copy-paste signaling while adding QR helpers.
 
 ---
 
@@ -142,6 +143,10 @@ Before adding a dependency, consider:
 
 Small libraries are preferred.
 
+For Phase 6 QR planning, do not add dependencies. QR implementation should be
+planned as an optional extension first. Any later QR dependency must be justified
+in the implementation phase and must not become a Core dependency.
+
 ---
 
 # Backward Compatibility
@@ -194,7 +199,15 @@ Always read:
 * ARCHITECTURE.md
 * CONTRIBUTING.md
 
+For extension phases, also read:
+
+* EXTENSIONS.md
+
 Do not begin implementation before understanding the current project state.
+
+For QR Extension work, confirm that copy-paste signaling remains the baseline,
+that QR code lives under `src/extensions/qr/`, and that Core does not import
+from QR.
 
 ---
 

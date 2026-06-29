@@ -22,14 +22,19 @@ The project currently supports:
 * JSON/string messages over RTCDataChannel.
 * Host send, broadcast, and disconnect helpers.
 * A Controller extension for button, stick, and tilt messages.
+* A QR extension for rendering strings as QR codes and scanning QR codes back
+  into strings.
 * Practical static examples.
 * Basic automated tests with Node's built-in test runner.
+
+QR helpers are optional and do not replace copy-paste signaling.
 
 PasteRTC is still early. The public API is intentionally small:
 
 ```js
 import { Host, Client } from "paste-rtc";
 import * as Controller from "paste-rtc/controller";
+import { generate, scan } from "paste-rtc/qr";
 ```
 
 When working inside this repository, the same public API is available through
@@ -52,6 +57,7 @@ Then open:
 * Basic example: `http://localhost:3000/examples/basic/`
 * Controller example: `http://localhost:3000/examples/controller/`
 * Multi-client example: `http://localhost:3000/examples/multi-client/`
+* QR example: `http://localhost:3000/examples/qr/`
 
 The exact port depends on the static server you use.
 
@@ -93,10 +99,16 @@ Import the Controller extension from its subpath:
 import * as Controller from "paste-rtc/controller";
 ```
 
+Import the QR extension from its subpath:
+
+```js
+import { generate as generateQr, scan as scanQr } from "paste-rtc/qr";
+```
+
 For application code, prefer importing Core from the package root and the
-Controller extension from the `paste-rtc/controller` subpath. The package root
-also re-exports a `Controller` namespace from `src/index.js`, but the subpath
-keeps extension usage explicit.
+Controller and QR extensions from their subpaths. The package root also
+re-exports a `Controller` namespace from `src/index.js` for compatibility, but
+extension subpaths keep optional usage explicit.
 
 ---
 
@@ -137,6 +149,10 @@ Each connection is established by copying text between browsers:
 
 For multi-client use, repeat this flow once per client. Each client gets its own
 offer/answer pair and its own WebRTC connection.
+
+Copy-paste signaling is the baseline behavior. QR helpers only make it easier
+to transfer the same offer and answer strings between browsers. Applications
+should still keep a copy-paste path available.
 
 ---
 
@@ -322,6 +338,43 @@ HTTPS and an explicit permission prompt.
 
 ---
 
+## QR extension usage
+
+The QR extension is optional. It converts strings into QR codes and scans QR
+codes back into strings. It does not know about Host, Client, offers, answers,
+or WebRTC.
+
+```js
+import { generate, scan } from "paste-rtc/qr";
+
+generate(canvasElement, signalText);
+generate(imageElement, signalText);
+
+const scanner = scan(videoElement);
+const decodedText = await scanner.result;
+
+// Or stop early and release the camera:
+scanner.stop();
+```
+
+The main library entry point does not re-export QR.
+
+The QR example at `examples/qr/` shows the complete flow:
+
+1. Host creates an offer with Core.
+2. QR Extension renders the offer.
+3. Client scans the offer.
+4. Client creates an answer with Core.
+5. QR Extension renders the answer.
+6. Host scans the answer.
+7. Core opens the DataChannel.
+8. Host and Client exchange messages.
+
+Use the `paste-rtc/qr` subpath, or `src/extensions/qr/index.js` when importing
+from local source files.
+
+---
+
 ## Project structure
 
 ```text
@@ -329,12 +382,14 @@ HTTPS and an explicit permission prompt.
 +-- examples/                 # Practical local examples
 |   +-- basic/
 |   +-- controller/
-|   `-- multi-client/
+|   +-- multi-client/
+|   `-- qr/
 +-- src/
 |   +-- index.js              # Public entry point
 |   +-- core/                 # Generic communication core
 |   `-- extensions/
-|       `-- controller/       # Optional controller extension
+|       +-- controller/       # Optional controller extension
+|       `-- qr/               # Optional QR signaling helper
 +-- tests/                    # Automated tests
 `-- package.json              # Package metadata and exports
 ```
@@ -360,6 +415,21 @@ Package exports mirror that split:
 ```text
 paste-rtc              -> src/index.js
 paste-rtc/controller   -> src/extensions/controller/index.js
+paste-rtc/qr           -> src/extensions/qr/index.js
+```
+
+The QR Extension belongs under `src/extensions/qr/`. It accepts any string,
+including Core-generated offer/answer strings, renders it as a QR code, and can
+scan a QR code back into a string. Core must never depend on QR. If signal
+strings are too long for practical QR transfer, chunking can be added later
+inside the QR Extension.
+
+QR Extension files:
+
+```text
+src/extensions/qr/index.js       # Public QR entry point
+src/extensions/qr/generate.js    # String to QR rendering
+src/extensions/qr/scan.js        # Camera scanner and QR decode helper
 ```
 
 ---
@@ -409,7 +479,7 @@ PasteRTC intentionally does not support these yet:
 * npm publishing workflow.
 * Build tooling or generated `dist/` files.
 * Backend signaling.
-* QR signaling.
+* QR chunking.
 * Compression.
 * Automatic reconnection.
 * Matchmaking or online discovery.

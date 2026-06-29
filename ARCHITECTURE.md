@@ -65,10 +65,14 @@ src/
 │  ├─ peer.js
 │  └─ signaling.js
 └─ extensions/
-   └─ controller/
+   ├─ controller/
       ├─ host.js
       ├─ client.js
       └─ browser-input.js
+   └─ qr/
+      ├─ generate.js
+      ├─ scan.js
+      └─ index.js
 ```
 
 Dependencies flow in one direction only:
@@ -138,6 +142,30 @@ The first extension is the Controller extension:
 ```text
 src/extensions/controller/
 ```
+
+The QR Extension lives under:
+
+```text
+src/extensions/qr/
+```
+
+The QR Extension is an optional signaling UX layer. It can encode and display
+any string, including existing Core offer/answer strings, as QR codes, and it
+can scan QR codes back into strings. It must not replace copy-paste signaling,
+change Core signaling formats, or require Core to import QR modules.
+
+QR code lives under:
+
+```text
+src/extensions/qr/
+├─ generate.js
+├─ scan.js
+└─ index.js
+```
+
+`generate.js` handles string-to-QR rendering. `scan.js` handles camera-based
+QR scanning and returns decoded text. `index.js` is the public QR Extension
+entry point.
 
 ## Host
 
@@ -283,6 +311,19 @@ JSON → base64url → optional compression
 Signaling must remain manual and serverless.
 
 No signaling server is allowed.
+
+Copy-paste is the baseline signaling transport. Optional extensions may help a
+user move the same signal strings between browsers, but Core signaling should
+continue to work with plain text alone.
+
+The QR Extension provides QR encode/display and scan/decode helpers under
+`src/extensions/qr/`. Scan/decode helpers pass decoded text back to application
+code so it can use existing Core APIs rather than adding QR-specific methods to
+Host or Client.
+
+If signal strings become too long for reliable single-code QR transfer,
+chunking can be designed later inside the QR Extension. Chunking should not
+change the Core signaling contract.
 
 ---
 
@@ -637,6 +678,31 @@ The official public Controller extension entry point is:
 import * as Controller from "paste-rtc/controller";
 ```
 
+The QR Extension uses the same optional subpath pattern:
+
+```ts
+import * as QR from "paste-rtc/qr";
+```
+
+Public QR exports:
+
+```ts
+QR.generate(target, text)
+QR.scan(videoElement, options?)
+```
+
+`generate(target, text)` renders any string into a QR code on a canvas or image
+element. `scan(videoElement, options?)` starts camera scanning and returns a
+scanner object with:
+
+```ts
+scanner.result
+scanner.stop()
+```
+
+`scanner.result` resolves to the decoded string. `scanner.stop()` stops scanning
+and releases the camera.
+
 When working from local source files inside this repository, use
 `src/index.js` for the same public exports. `src/index.js` also re-exports a
 `Controller` namespace for compatibility, but new package consumers should
@@ -748,12 +814,13 @@ Internal modules include:
 2. Keep the first implementation small.
 3. Avoid dependencies unless they solve a real problem.
 4. Keep signaling manual and serverless.
-5. Keep copy-paste signaling available even if QR is added later.
+5. Keep copy-paste signaling available when QR is used.
 6. Host and Client should be simple to understand.
 7. Connection should hide raw WebRTC complexity.
 8. Multi-client support uses one Connection per client.
 9. Controller helpers should be optional.
-10. Do not build production infrastructure into the library.
+10. QR helpers should be optional and live outside Core.
+11. Do not build production infrastructure into the library.
 
 ---
 
