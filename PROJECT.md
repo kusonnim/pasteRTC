@@ -214,33 +214,39 @@ Controller helpers are an optional extension built on top of the generic communi
 
 ---
 
-# Demo Application
+# Example Applications
 
-A simple demo application should be included.
+Simple example applications should be included.
 
-The same page should support both modes.
+Examples should demonstrate the library through the public API.
 
-Startup screen:
+Useful examples include:
 
 ```text
-[ Host ]
-[ Client ]
+basic/
+controller/
+multi-client/
 ```
 
-Host mode:
+Basic example:
 
 * Generate offer
 * Display offer
 * Accept answer
+* Send test messages
+
+Controller example:
+
+* Button helpers
+* Stick helpers
+* Tilt helpers
+* Controller events
+
+Multi-client example:
+
 * Show connected clients
-* Send test messages
-
-Client mode:
-
-* Paste offer
-* Generate answer
-* Send test messages
-* Display received messages
+* Send to one client
+* Broadcast to all clients
 
 ---
 

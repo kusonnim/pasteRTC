@@ -79,7 +79,7 @@ extensions → core
 
 Core modules must not import extension modules. Top-level files such as
 `src/host.js`, `src/client.js`, and `src/browser-input.js` are compatibility
-re-export files for the current public API.
+re-export files for earlier local imports.
 
 The dependency rule is:
 
@@ -719,7 +719,7 @@ client.bindButton(element, key, options?)
 ```
 
 Top-level files such as `src/host.js` and `src/client.js` are compatibility
-entry points for the demo and earlier phases. New library consumers should use
+entry points for earlier phases. New library consumers should use
 `src/index.js`.
 
 Do not expose internal implementation details from `src/index.js`.

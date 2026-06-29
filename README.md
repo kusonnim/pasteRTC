@@ -22,7 +22,7 @@ The project currently supports:
 * JSON/string messages over RTCDataChannel.
 * Host send, broadcast, and disconnect helpers.
 * A Controller extension for button, stick, and tilt messages.
-* Static demo pages and practical examples.
+* Practical static examples.
 * Basic automated tests with Node's built-in test runner.
 
 PasteRTC is still early. The public API is intentionally small and should be
@@ -42,7 +42,6 @@ npx serve .
 
 Then open:
 
-* Demo: `http://localhost:3000/`
 * Basic example: `http://localhost:3000/examples/basic/`
 * Controller example: `http://localhost:3000/examples/controller/`
 * Multi-client example: `http://localhost:3000/examples/multi-client/`
@@ -280,9 +279,6 @@ HTTPS and an explicit permission prompt.
 
 ```text
 .
-├── index.html              # Main demo page
-├── main.js                 # Demo behavior
-├── style.css               # Demo styling
 ├── examples/               # Practical local examples
 │   ├── basic/
 │   ├── controller/
@@ -354,4 +350,3 @@ PasteRTC intentionally does not support these yet:
 * Production-scale connection diagnostics.
 
 Manual copy-paste signaling and static deployment remain the baseline behavior.
-
