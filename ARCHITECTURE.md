@@ -228,12 +228,21 @@ Host-specific events:
 ```text
 clientConnected
 clientDisconnected
+button
+stick
+tilt
 ```
 
 The public API should look like this:
 
 ```ts
 host.on("data", (data, clientId) => {});
+
+host.on("button", (data, clientId) => {});
+
+host.on("stick", (data, clientId) => {});
+
+host.on("tilt", (data, clientId) => {});
 
 client.on("connected", () => {});
 ```

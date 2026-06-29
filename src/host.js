@@ -6,9 +6,13 @@ import {
 import { decodeAnswer, encodeOffer } from "./signaling.js";
 
 const PRIMARY_CLIENT_ID = "primary";
+const CONTROLLER_EVENTS = new Set(["button", "stick", "tilt"]);
 const SUPPORTED_EVENTS = new Set([
   "connected",
   "data",
+  "button",
+  "stick",
+  "tilt",
   "statechange",
   "error",
   "clientConnected",
@@ -55,10 +59,10 @@ export class Host {
   /**
    * Registers a listener for a host event.
    *
-   * Supported events: `connected`, `data`, `statechange`, `error`,
-   * `clientConnected`, and `clientDisconnected`.
+   * Supported events: `connected`, `data`, `button`, `stick`, `tilt`,
+   * `statechange`, `error`, `clientConnected`, and `clientDisconnected`.
    *
-   * @param {"connected" | "data" | "statechange" | "error" | "clientConnected" | "clientDisconnected"} eventName
+   * @param {"connected" | "data" | "button" | "stick" | "tilt" | "statechange" | "error" | "clientConnected" | "clientDisconnected"} eventName
    * @param {Function} callback
    * @returns {this}
    */
@@ -227,6 +231,7 @@ export class Host {
       },
       onMessage: (data) => {
         this.#emit("data", data, clientId);
+        this.#emitControllerEvent(data, clientId);
       },
       onStateChange: (state) => {
         this.#emit("statechange", state, clientId);
@@ -261,6 +266,22 @@ export class Host {
 
     this.#clients.delete(clientId);
     this.#emitClientDisconnected(clientId, client);
+  }
+
+  #emitControllerEvent(data, clientId) {
+    let message;
+
+    try {
+      message = JSON.parse(data);
+    } catch {
+      return;
+    }
+
+    if (!message || !CONTROLLER_EVENTS.has(message.type)) {
+      return;
+    }
+
+    this.#emit(message.type, message, clientId);
   }
 
   #emit(eventName, ...args) {

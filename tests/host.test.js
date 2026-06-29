@@ -35,6 +35,9 @@ describe("Host", () => {
     assert.equal(host.on("connected", () => {}), host);
     assert.equal(host.on("clientConnected", () => {}), host);
     assert.equal(host.on("clientDisconnected", () => {}), host);
+    assert.equal(host.on("button", () => {}), host);
+    assert.equal(host.on("stick", () => {}), host);
+    assert.equal(host.on("tilt", () => {}), host);
     assert.throws(() => host.on("unknown", () => {}), /Unsupported event/);
     assert.throws(() => host.on("data", null), /must be a function/);
   });
@@ -189,6 +192,59 @@ describe("Host", () => {
       ["connected", "client-b"],
       ["data", "client-b", "hello"],
       ["disconnected", "client-b"],
+    ]);
+  });
+
+  test("routes controller messages to typed host events", async () => {
+    const events = [];
+    const host = new Host();
+    await host.createOffer("client-b");
+    const clientBPeer = latestPeerConnection();
+    const clientBChannel = clientBPeer.channels[0];
+    const messages = [
+      {
+        type: "button",
+        key: "A",
+        pressed: true,
+      },
+      {
+        type: "stick",
+        x: 0.5,
+        y: -0.2,
+      },
+      {
+        type: "tilt",
+        alpha: 10,
+        beta: 20,
+        gamma: -5,
+      },
+    ];
+
+    host
+      .on("data", (data, clientId) =>
+        events.push(["data", clientId, JSON.parse(data)]),
+      )
+      .on("button", (data, clientId) =>
+        events.push(["button", clientId, data]),
+      )
+      .on("stick", (data, clientId) =>
+        events.push(["stick", clientId, data]),
+      )
+      .on("tilt", (data, clientId) =>
+        events.push(["tilt", clientId, data]),
+      );
+
+    for (const message of messages) {
+      clientBChannel.receive(JSON.stringify(message));
+    }
+
+    assert.deepEqual(events, [
+      ["data", "client-b", messages[0]],
+      ["button", "client-b", messages[0]],
+      ["data", "client-b", messages[1]],
+      ["stick", "client-b", messages[1]],
+      ["data", "client-b", messages[2]],
+      ["tilt", "client-b", messages[2]],
     ]);
   });
 
