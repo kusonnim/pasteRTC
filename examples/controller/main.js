@@ -3,6 +3,7 @@ import { Controller } from "../../src/index.js";
 let host;
 let client;
 let tiltController;
+let motionController;
 let buttonBinding;
 
 const $ = (selector) => document.querySelector(selector);
@@ -47,6 +48,9 @@ function setupHost() {
   host.on("tilt", (data, clientId) => {
     appendLog($("#host-log"), `tilt from ${clientId}`, data);
   });
+  host.on("motion", (data, clientId) => {
+    appendLog($("#host-log"), `motion from ${clientId}`, data);
+  });
   host.on("error", (error, clientId) => {
     appendLog($("#host-log"), `error from ${clientId}`, error.message);
   });
@@ -72,6 +76,7 @@ function setupClient() {
 
   buttonBinding = client.bindButton($("#button-b"), "B");
   tiltController = client.createTiltController();
+  motionController = client.createMotionController();
 
   return client;
 }
@@ -140,9 +145,33 @@ $("#stop-tilt").addEventListener("click", () => {
   appendLog($("#client-log"), "device tilt stopped", true);
 });
 
+$("#send-motion").addEventListener("click", () => {
+  const message = {
+    acceleration: { x: 0.1, y: 0.2, z: 0.3 },
+    accelerationIncludingGravity: { x: 0.1, y: 9.8, z: 0.3 },
+    rotationRate: { alpha: 1, beta: 2, gamma: 3 },
+    interval: 16,
+  };
+
+  setupClient().sendMotion(message);
+  appendLog($("#client-log"), "sent motion", message);
+});
+
+$("#start-motion").addEventListener("click", async () => {
+  setupClient();
+  const started = await motionController.start();
+  appendLog($("#client-log"), "device motion started", started);
+});
+
+$("#stop-motion").addEventListener("click", () => {
+  motionController?.stop();
+  appendLog($("#client-log"), "device motion stopped", true);
+});
+
 globalThis.addEventListener("pagehide", () => {
   buttonBinding?.unbind();
   tiltController?.stop();
+  motionController?.stop();
   host?.close();
   client?.close();
 });
