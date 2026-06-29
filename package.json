@@ -1,8 +1,22 @@
 {
   "name": "paste-rtc",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Static, serverless WebRTC communication for browsers with optional extensions.",
   "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./controller": "./src/extensions/controller/index.js"
+  },
   "scripts": {
     "test": "node --test --test-concurrency=1"
-  }
+  },
+  "keywords": [
+    "webrtc",
+    "rtcdatachannel",
+    "peer-to-peer",
+    "serverless",
+    "static-site",
+    "controller"
+  ]
 }
