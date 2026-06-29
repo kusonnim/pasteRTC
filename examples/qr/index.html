@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PasteRTC QR Example</title>
+    <link rel="stylesheet" href="../shared.css">
+    <style>
+      canvas,
+      video {
+        width: min(100%, 18rem);
+        aspect-ratio: 1;
+        border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+        border-radius: 0.5rem;
+        background: color-mix(in srgb, CanvasText 8%, transparent);
+      }
+
+      video {
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PasteRTC QR Example</h1>
+      <p class="hint">
+        Uses Core for WebRTC and the optional QR extension for moving signaling strings.
+      </p>
+
+      <section id="mode-panel">
+        <h2>Choose mode</h2>
+        <div class="row">
+          <button id="host-mode" type="button">Host mode</button>
+          <button id="client-mode" type="button">Client mode</button>
+        </div>
+      </section>
+
+      <section id="host-panel" class="hidden">
+        <h2>Host</h2>
+        <p>Status: <span id="host-status" class="status">idle</span></p>
+
+        <button id="create-offer" type="button">Create Offer QR</button>
+
+        <div class="grid">
+          <div class="panel">
+            <h3>Offer QR</h3>
+            <canvas id="offer-qr" aria-label="Offer QR code"></canvas>
+          </div>
+
+          <div class="panel">
+            <h3>Scan Answer QR</h3>
+            <video id="answer-video" muted playsinline></video>
+            <div class="row">
+              <button id="scan-answer" type="button">Scan Answer</button>
+              <button id="stop-answer-scan" type="button">Stop Scan</button>
+            </div>
+          </div>
+        </div>
+
+        <label>
+          Offer
+          <textarea id="offer-output" readonly></textarea>
+        </label>
+
+        <label>
+          Answer input
+          <textarea id="answer-input"></textarea>
+        </label>
+
+        <button id="accept-answer" type="button">Accept Answer</button>
+
+        <div class="panel">
+          <h3>Send JSON</h3>
+          <div class="row">
+            <input id="host-message" type="text" value="Hello from host">
+            <button id="host-send" type="button">Send</button>
+          </div>
+        </div>
+
+        <h3>Host log</h3>
+        <pre id="host-log" class="log"></pre>
+      </section>
+
+      <section id="client-panel" class="hidden">
+        <h2>Client</h2>
+        <p>Status: <span id="client-status" class="status">idle</span></p>
+
+        <div class="grid">
+          <div class="panel">
+            <h3>Scan Offer QR</h3>
+            <video id="offer-video" muted playsinline></video>
+            <div class="row">
+              <button id="scan-offer" type="button">Scan Offer</button>
+              <button id="stop-offer-scan" type="button">Stop Scan</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Answer QR</h3>
+            <canvas id="answer-qr" aria-label="Answer QR code"></canvas>
+          </div>
+        </div>
+
+        <label>
+          Offer input
+          <textarea id="offer-input"></textarea>
+        </label>
+
+        <button id="create-answer" type="button">Create Answer QR</button>
+
+        <label>
+          Answer
+          <textarea id="answer-output" readonly></textarea>
+        </label>
+
+        <div class="panel">
+          <h3>Send JSON</h3>
+          <div class="row">
+            <input id="client-message" type="text" value="Hello from client">
+            <button id="client-send" type="button">Send</button>
+          </div>
+        </div>
+
+        <h3>Client log</h3>
+        <pre id="client-log" class="log"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

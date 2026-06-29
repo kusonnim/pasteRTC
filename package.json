@@ -6,7 +6,8 @@
   "main": "./src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./controller": "./src/extensions/controller/index.js"
+    "./controller": "./src/extensions/controller/index.js",
+    "./qr": "./src/extensions/qr/index.js"
   },
   "scripts": {
     "test": "node --test --test-concurrency=1"
@@ -18,5 +19,9 @@
     "serverless",
     "static-site",
     "controller"
-  ]
+  ],
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^2.0.4"
+  }
 }

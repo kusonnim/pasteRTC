@@ -87,7 +87,6 @@ are intentionally promoted into the public API.
 
 Possible future extensions include:
 
-* QR signaling
 * Debug tools
 * File transfer
 * Gamepad input
@@ -96,6 +95,70 @@ Possible future extensions include:
 
 Each extension should be optional and should build on Core rather than changing
 Core behavior.
+
+---
+
+# Current Extension: QR
+
+The QR Extension provides QR generation and scanning helpers.
+
+Its purpose is to make manual signaling easier without changing the underlying
+signaling model. Copy-paste signaling remains the baseline and must continue to
+work without QR.
+
+QR code should live under:
+
+```text
+src/extensions/qr/
+```
+
+The QR Extension may provide:
+
+* Encode/display helpers for any string.
+* Encode/display helpers for Core-generated offer strings.
+* Encode/display helpers for Core-generated answer strings.
+* Scan/decode helpers that return text from QR codes.
+* Small UI helpers that applications may opt into.
+
+Public QR API:
+
+```js
+import { generate, scan } from "paste-rtc/qr";
+
+generate(canvasElement, text);
+generate(imageElement, text);
+
+const scanner = scan(videoElement);
+const decodedText = await scanner.result;
+scanner.stop();
+```
+
+The QR Extension is demonstrated in:
+
+```text
+examples/qr/
+```
+
+The QR Extension must not:
+
+* Replace copy-paste signaling.
+* Change Core Host or Client APIs.
+* Change Core signaling formats.
+* Add a Core dependency on QR code.
+* Require existing examples to use QR.
+
+Dependency flow remains:
+
+```text
+qr extension -> core
+```
+
+Core must never import from `src/extensions/qr/`.
+
+The current QR implementation is intentionally simple and optional. It does not
+include compression or chunking. If signal strings are too long for reliable
+single-code transfer, QR-specific chunking can be planned later inside the QR
+Extension.
 
 ---
 
