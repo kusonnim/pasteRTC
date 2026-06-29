@@ -272,6 +272,16 @@ client.sendTilt({
     beta,
     gamma
 });
+
+const tilt = client.createTiltController();
+
+await tilt.start();
+
+tilt.stop();
+
+const binding = client.bindButton(buttonElement, "A");
+
+binding.unbind();
 ```
 
 Possible helper modules:
@@ -286,6 +296,10 @@ controller/
 These helpers should only format and send messages.
 
 They should not be required for basic communication.
+
+Browser integration helpers are optional and should stay separate from
+networking code. They should forward browser input into the existing controller
+helpers instead of formatting or sending messages directly.
 
 ---
 

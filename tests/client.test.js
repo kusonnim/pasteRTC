@@ -19,6 +19,8 @@ describe("Client", () => {
       "sendButton",
       "sendStick",
       "sendTilt",
+      "createTiltController",
+      "bindButton",
       "close",
       "on",
     ]) {

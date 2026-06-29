@@ -3,6 +3,10 @@ import {
   createAnswerDescription,
   Peer,
 } from "./peer.js";
+import {
+  bindButton,
+  createTiltController,
+} from "./browser-input.js";
 import { decodeOffer, encodeAnswer } from "./signaling.js";
 
 /**
@@ -78,5 +82,27 @@ export class Client extends Peer {
       beta,
       gamma,
     }));
+  }
+
+  /**
+   * Creates a browser Device Orientation helper.
+   *
+   * @param {object} [options]
+   * @returns {import("./browser-input.js").TiltController}
+   */
+  createTiltController(options) {
+    return createTiltController(this, options);
+  }
+
+  /**
+   * Binds a DOM element to a controller button.
+   *
+   * @param {EventTarget & object} element
+   * @param {string} key
+   * @param {object} [options]
+   * @returns {import("./browser-input.js").ButtonBinding}
+   */
+  bindButton(element, key, options) {
+    return bindButton(this, element, key, options);
   }
 }
