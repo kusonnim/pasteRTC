@@ -10,7 +10,7 @@
     <main>
       <h1>PasteRTC Controller Example</h1>
       <p class="hint">
-        Uses the Controller extension for button, stick, and tilt messages.
+        Uses the Controller extension for button, stick, tilt, and motion messages.
       </p>
 
       <section id="mode-panel">
@@ -89,6 +89,18 @@
               Device tilt usually requires a mobile browser and HTTPS.
             </p>
           </div>
+
+          <div class="panel">
+            <h3>Motion helper</h3>
+            <div class="row">
+              <button id="send-motion" type="button">Send Sample Motion</button>
+              <button id="start-motion" type="button">Start Device Motion</button>
+              <button id="stop-motion" type="button">Stop Device Motion</button>
+            </div>
+            <p class="hint">
+              Device motion usually requires a mobile browser, HTTPS, and permission.
+            </p>
+          </div>
         </div>
 
         <h3>Client log</h3>
@@ -99,4 +111,3 @@
     <script type="module" src="./main.js"></script>
   </body>
 </html>
-

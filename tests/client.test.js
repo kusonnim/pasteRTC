@@ -19,7 +19,9 @@ describe("Client", () => {
       "sendButton",
       "sendStick",
       "sendTilt",
+      "sendMotion",
       "createTiltController",
+      "createMotionController",
       "bindButton",
       "close",
       "on",
@@ -85,6 +87,12 @@ describe("Client", () => {
     client.sendButton("A", true);
     client.sendStick({ x: 0.5, y: -0.25 });
     client.sendTilt({ alpha: 1, beta: 2, gamma: 3 });
+    client.sendMotion({
+      acceleration: { x: 1, y: 2, z: 3 },
+      accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+      rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+      interval: 16,
+    });
 
     assert.deepEqual(channel.sent.map((message) => JSON.parse(message)), [
       {
@@ -102,6 +110,13 @@ describe("Client", () => {
         alpha: 1,
         beta: 2,
         gamma: 3,
+      },
+      {
+        type: "motion",
+        acceleration: { x: 1, y: 2, z: 3 },
+        accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+        rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+        interval: 16,
       },
     ]);
   });

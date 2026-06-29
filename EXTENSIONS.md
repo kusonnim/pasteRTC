@@ -54,8 +54,9 @@ The Controller extension is the first extension.
 It provides:
 
 * Client controller helpers such as `sendButton()`, `sendStick()`, and `sendTilt()`
-* Host controller event routing such as `button`, `stick`, and `tilt`
-* Browser input helpers such as button bindings and tilt controllers
+* Client motion helpers such as `sendMotion()`
+* Host controller event routing such as `button`, `stick`, `tilt`, and `motion`
+* Browser input helpers such as button bindings, tilt controllers, and motion controllers
 
 Controller code lives under:
 
@@ -63,7 +64,15 @@ Controller code lives under:
 src/extensions/controller/
 ```
 
-The official public Controller surface is exposed through `src/index.js`:
+The official public Controller surface is exposed through the controller
+subpath:
+
+```ts
+import * as Controller from "paste-rtc/controller";
+```
+
+When working directly from local source files, the same namespace is also
+available through `src/index.js`:
 
 ```ts
 import { Controller } from "./src/index.js";
@@ -75,6 +84,7 @@ Public Controller exports:
 Controller.Host
 Controller.Client
 Controller.createTiltController(client, options?)
+Controller.createMotionController(client, options?)
 Controller.bindButton(client, element, key, options?)
 ```
 

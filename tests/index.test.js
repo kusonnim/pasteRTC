@@ -16,6 +16,7 @@ describe("Core entry point", () => {
     assert.equal(typeof Controller, "object");
     assert.equal(typeof Controller.Host, "function");
     assert.equal(typeof Controller.Client, "function");
+    assert.equal(typeof Controller.createMotionController, "function");
     assert.equal(typeof Controller.createTiltController, "function");
     assert.equal(typeof Controller.bindButton, "function");
 
@@ -23,6 +24,7 @@ describe("Core entry point", () => {
       "Client",
       "Host",
       "bindButton",
+      "createMotionController",
       "createTiltController",
     ]);
 

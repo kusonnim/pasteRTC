@@ -1,6 +1,6 @@
 import { Host as CoreHost } from "../../core/host.js";
 
-const CONTROLLER_EVENTS = new Set(["button", "stick", "tilt"]);
+const CONTROLLER_EVENTS = new Set(["button", "stick", "tilt", "motion"]);
 const SUPPORTED_EVENTS = new Set([
   ...CoreHost.supportedEvents,
   ...CONTROLLER_EVENTS,

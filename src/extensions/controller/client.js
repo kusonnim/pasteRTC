@@ -1,6 +1,7 @@
 import { Client as CoreClient } from "../../core/client.js";
 import {
   bindButton,
+  createMotionController,
   createTiltController,
 } from "./browser-input.js";
 
@@ -55,6 +56,30 @@ export class Client extends CoreClient {
   }
 
   /**
+   * Sends device motion values.
+   *
+   * @param {object} motion
+   * @param {DeviceMotionEventAcceleration | null} motion.acceleration
+   * @param {DeviceMotionEventAcceleration | null} motion.accelerationIncludingGravity
+   * @param {DeviceMotionEventRotationRate | null} motion.rotationRate
+   * @param {number} motion.interval
+   */
+  sendMotion({
+    acceleration,
+    accelerationIncludingGravity,
+    rotationRate,
+    interval,
+  }) {
+    this.send(JSON.stringify({
+      type: "motion",
+      acceleration,
+      accelerationIncludingGravity,
+      rotationRate,
+      interval,
+    }));
+  }
+
+  /**
    * Creates a browser Device Orientation helper.
    *
    * @param {object} [options]
@@ -62,6 +87,16 @@ export class Client extends CoreClient {
    */
   createTiltController(options) {
     return createTiltController(this, options);
+  }
+
+  /**
+   * Creates a browser Device Motion helper.
+   *
+   * @param {object} [options]
+   * @returns {import("./browser-input.js").MotionController}
+   */
+  createMotionController(options) {
+    return createMotionController(this, options);
   }
 
   /**

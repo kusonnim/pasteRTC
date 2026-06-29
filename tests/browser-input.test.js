@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 
 import {
   bindButton,
+  createMotionController,
   createTiltController,
 } from "../src/browser-input.js";
 
@@ -86,6 +87,82 @@ describe("browser input helpers", () => {
       alpha: 10,
       beta: 20,
       gamma: -5,
+    });
+  });
+
+  test("motion controller starts, forwards motion values, and stops", async () => {
+    const sent = [];
+    const target = new EventTarget();
+    target.DeviceMotionEvent = function DeviceMotionEvent() {};
+    const motion = createMotionController(
+      {
+        sendMotion: (data) => sent.push(data),
+      },
+      { target },
+    );
+
+    assert.equal(await motion.start(), true);
+
+    dispatch(target, "devicemotion", {
+      acceleration: { x: 1, y: 2, z: 3 },
+      accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+      rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+      interval: 16,
+    });
+
+    motion.stop();
+
+    dispatch(target, "devicemotion", {
+      acceleration: { x: 10, y: 20, z: 30 },
+      accelerationIncludingGravity: { x: 40, y: 50, z: 60 },
+      rotationRate: { alpha: 70, beta: 80, gamma: 90 },
+      interval: 32,
+    });
+
+    assert.deepEqual(sent, [
+      {
+        acceleration: { x: 1, y: 2, z: 3 },
+        accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+        rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+        interval: 16,
+      },
+    ]);
+  });
+
+  test("motion controller reports unavailable browser support", async () => {
+    const target = new EventTarget();
+    const motion = createMotionController(
+      {
+        sendMotion: () => {
+          throw new Error("should not send");
+        },
+      },
+      { target },
+    );
+
+    assert.equal(await motion.start(), false);
+  });
+
+  test("motion controller handles denied browser permission", async () => {
+    const target = new EventTarget();
+    target.DeviceMotionEvent = function DeviceMotionEvent() {};
+    target.DeviceMotionEvent.requestPermission = async () => "denied";
+    const motion = createMotionController(
+      {
+        sendMotion: () => {
+          throw new Error("should not send");
+        },
+      },
+      { target },
+    );
+
+    assert.equal(await motion.start(), false);
+
+    dispatch(target, "devicemotion", {
+      acceleration: { x: 1, y: 2, z: 3 },
+      accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+      rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+      interval: 16,
     });
   });
 
