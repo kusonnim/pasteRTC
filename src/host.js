@@ -33,10 +33,10 @@ export class Host {
 
   /**
    * @param {object} [callbacks]
-   * @param {() => void} [callbacks.onOpen]
-   * @param {(data: string) => void} [callbacks.onMessage]
-   * @param {(state: string) => void} [callbacks.onStateChange]
-   * @param {(error: Error) => void} [callbacks.onError]
+   * @param {(clientId: string) => void} [callbacks.onOpen]
+   * @param {(data: string, clientId: string) => void} [callbacks.onMessage]
+   * @param {(state: string, clientId: string) => void} [callbacks.onStateChange]
+   * @param {(error: Error, clientId: string) => void} [callbacks.onError]
    * @param {(clientId: string) => void} [callbacks.onClientConnected]
    * @param {(clientId: string) => void} [callbacks.onClientDisconnected]
    */
@@ -86,6 +86,7 @@ export class Host {
   async createOffer(clientId = PRIMARY_CLIENT_ID) {
     const client = this.#getOrAddClient(clientId);
     const offer = await createOfferDescription(client.peer);
+    client.awaitingAnswer = true;
     return encodeOffer(offer);
   }
 
@@ -102,10 +103,12 @@ export class Host {
   async acceptAnswer(clientIdOrAnswer, answerText) {
     const [clientId, signalText] =
       answerText === undefined
-        ? [PRIMARY_CLIENT_ID, clientIdOrAnswer]
+        ? [this.#getDefaultAnswerClientId(), clientIdOrAnswer]
         : [clientIdOrAnswer, answerText];
     const answer = decodeAnswer(signalText);
-    await acceptAnswerDescription(this.#getClient(clientId).peer, answer);
+    const client = this.#getClient(clientId);
+    await acceptAnswerDescription(client.peer, answer);
+    client.awaitingAnswer = false;
   }
 
   /**
@@ -145,6 +148,7 @@ export class Host {
    * @returns {boolean} Whether a client was removed.
    */
   disconnect(clientId = PRIMARY_CLIENT_ID) {
+    this.#assertClientId(clientId);
     const client = this.#clients.get(clientId);
 
     if (!client) {
@@ -152,8 +156,7 @@ export class Host {
     }
 
     client.peer.close();
-    this.#clients.delete(clientId);
-    this.#emitClientDisconnected(clientId, client);
+    this.#removeClient(clientId, client);
     return true;
   }
 
@@ -167,6 +170,32 @@ export class Host {
   #getOrAddClient(clientId) {
     this.#assertClientId(clientId);
     return this.#clients.get(clientId) ?? this.#addClient(clientId);
+  }
+
+  #getDefaultAnswerClientId() {
+    const pendingClientIds = [];
+
+    for (const [clientId, client] of this.#clients) {
+      if (client.awaitingAnswer) {
+        pendingClientIds.push(clientId);
+      }
+    }
+
+    if (this.#clients.get(PRIMARY_CLIENT_ID)?.awaitingAnswer) {
+      return PRIMARY_CLIENT_ID;
+    }
+
+    if (pendingClientIds.length === 1) {
+      return pendingClientIds[0];
+    }
+
+    if (pendingClientIds.length > 1) {
+      throw new Error(
+        "Multiple clients are waiting for answers. Use acceptAnswer(clientId, answerText).",
+      );
+    }
+
+    return PRIMARY_CLIENT_ID;
   }
 
   #getClient(clientId) {
@@ -186,6 +215,7 @@ export class Host {
     const client = {
       connected: false,
       disconnected: false,
+      awaitingAnswer: false,
       peer: undefined,
     };
 
@@ -202,7 +232,7 @@ export class Host {
         this.#emit("statechange", state, clientId);
 
         if (state === "disconnected" || state === "closed") {
-          this.#emitClientDisconnected(clientId, client);
+          this.#removeClient(clientId, client);
         }
       },
       onError: (error) => {
@@ -222,6 +252,15 @@ export class Host {
     client.disconnected = true;
     client.connected = false;
     this.#emit("clientDisconnected", clientId);
+  }
+
+  #removeClient(clientId, client) {
+    if (this.#clients.get(clientId) !== client) {
+      return;
+    }
+
+    this.#clients.delete(clientId);
+    this.#emitClientDisconnected(clientId, client);
   }
 
   #emit(eventName, ...args) {

@@ -462,6 +462,16 @@ host.broadcast(data);
 host.disconnect(clientId);
 ```
 
+Host events include the stable `clientId` associated with each connection:
+
+```ts
+host.on("clientConnected", (clientId) => {});
+
+host.on("clientDisconnected", (clientId) => {});
+
+host.on("data", (data, clientId) => {});
+```
+
 Each client must complete manual signaling separately.
 
 This means each client needs its own offer/answer pair.
