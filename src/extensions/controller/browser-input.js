@@ -92,6 +92,107 @@ export class TiltController {
 }
 
 /**
+ * Bridges browser Device Motion events into Client.sendMotion().
+ */
+export class MotionController {
+  #client;
+  #target;
+  #eventName;
+  #listening = false;
+  #handleMotion = (event) => {
+    this.#client.sendMotion({
+      acceleration: normalizeAcceleration(event.acceleration),
+      accelerationIncludingGravity: normalizeAcceleration(
+        event.accelerationIncludingGravity,
+      ),
+      rotationRate: normalizeRotationRate(event.rotationRate),
+      interval: event.interval,
+    });
+  };
+
+  /**
+   * @param {object} client
+   * @param {(motion: {
+   *   acceleration: DeviceMotionEventAcceleration | null,
+   *   accelerationIncludingGravity: DeviceMotionEventAcceleration | null,
+   *   rotationRate: DeviceMotionEventRotationRate | null,
+   *   interval: number
+   * }) => void} client.sendMotion
+   * @param {object} [options]
+   * @param {EventTarget & object} [options.target]
+   * @param {string} [options.eventName]
+   */
+  constructor(client, {
+    target = globalThis,
+    eventName = "devicemotion",
+  } = {}) {
+    this.#client = client;
+    this.#target = target;
+    this.#eventName = eventName;
+  }
+
+  /**
+   * Starts forwarding motion events.
+   *
+   * @returns {Promise<boolean>} Whether listening started.
+   */
+  async start() {
+    if (!this.#canListen()) {
+      return false;
+    }
+
+    const hasPermission = await this.#requestPermission();
+
+    if (!hasPermission) {
+      return false;
+    }
+
+    if (!this.#listening) {
+      this.#target.addEventListener(this.#eventName, this.#handleMotion);
+      this.#listening = true;
+    }
+
+    return true;
+  }
+
+  /** Stops forwarding motion events. */
+  stop() {
+    if (!this.#listening) {
+      return;
+    }
+
+    this.#target.removeEventListener(this.#eventName, this.#handleMotion);
+    this.#listening = false;
+  }
+
+  #canListen() {
+    return Boolean(
+      this.#target?.addEventListener &&
+        this.#target?.removeEventListener &&
+        this.#getDeviceMotionEvent(),
+    );
+  }
+
+  async #requestPermission() {
+    const DeviceMotion = this.#getDeviceMotionEvent();
+
+    if (typeof DeviceMotion?.requestPermission !== "function") {
+      return true;
+    }
+
+    try {
+      return (await DeviceMotion.requestPermission()) === "granted";
+    } catch {
+      return false;
+    }
+  }
+
+  #getDeviceMotionEvent() {
+    return this.#target?.DeviceMotionEvent ?? globalThis.DeviceMotionEvent;
+  }
+}
+
+/**
  * Binds DOM press/release events to Client.sendButton().
  */
 export class ButtonBinding {
@@ -179,6 +280,17 @@ export function createTiltController(client, options) {
 }
 
 /**
+ * Creates a motion controller for a Client-like object.
+ *
+ * @param {object} client
+ * @param {object} [options]
+ * @returns {MotionController}
+ */
+export function createMotionController(client, options) {
+  return new MotionController(client, options);
+}
+
+/**
  * Binds a DOM element to a Client-like button sender.
  *
  * @param {object} client
@@ -189,4 +301,28 @@ export function createTiltController(client, options) {
  */
 export function bindButton(client, element, key, options) {
   return new ButtonBinding(client, element, key, options);
+}
+
+function normalizeAcceleration(acceleration) {
+  if (!acceleration) {
+    return acceleration;
+  }
+
+  return {
+    x: acceleration.x,
+    y: acceleration.y,
+    z: acceleration.z,
+  };
+}
+
+function normalizeRotationRate(rotationRate) {
+  if (!rotationRate) {
+    return rotationRate;
+  }
+
+  return {
+    alpha: rotationRate.alpha,
+    beta: rotationRate.beta,
+    gamma: rotationRate.gamma,
+  };
 }

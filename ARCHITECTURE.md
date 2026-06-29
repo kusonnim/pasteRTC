@@ -349,6 +349,7 @@ clientDisconnected
 button
 stick
 tilt
+motion
 ```
 
 The public API should look like this:
@@ -361,6 +362,8 @@ host.on("button", (data, clientId) => {});
 host.on("stick", (data, clientId) => {});
 
 host.on("tilt", (data, clientId) => {});
+
+host.on("motion", (data, clientId) => {});
 
 client.on("connected", () => {});
 ```
@@ -391,11 +394,24 @@ client.sendTilt({
     gamma
 });
 
+client.sendMotion({
+    acceleration,
+    accelerationIncludingGravity,
+    rotationRate,
+    interval
+});
+
 const tilt = client.createTiltController();
 
 await tilt.start();
 
 tilt.stop();
+
+const motion = client.createMotionController();
+
+await motion.start();
+
+motion.stop();
 
 const binding = client.bindButton(buttonElement, "A");
 
@@ -779,6 +795,7 @@ Controller.bindButton(client, element, key, options?)
 button
 stick
 tilt
+motion
 ```
 
 `Controller.Client` supports the Core `Client` API and adds:
@@ -787,7 +804,9 @@ tilt
 client.sendButton(key, pressed)
 client.sendStick({ x, y })
 client.sendTilt({ alpha, beta, gamma })
+client.sendMotion({ acceleration, accelerationIncludingGravity, rotationRate, interval })
 client.createTiltController(options?)
+client.createMotionController(options?)
 client.bindButton(element, key, options?)
 ```
 

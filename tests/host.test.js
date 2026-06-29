@@ -38,6 +38,7 @@ describe("Host", () => {
     assert.equal(host.on("button", () => {}), host);
     assert.equal(host.on("stick", () => {}), host);
     assert.equal(host.on("tilt", () => {}), host);
+    assert.equal(host.on("motion", () => {}), host);
     assert.throws(() => host.on("unknown", () => {}), /Unsupported event/);
     assert.throws(() => host.on("data", null), /must be a function/);
   });
@@ -218,6 +219,13 @@ describe("Host", () => {
         beta: 20,
         gamma: -5,
       },
+      {
+        type: "motion",
+        acceleration: { x: 1, y: 2, z: 3 },
+        accelerationIncludingGravity: { x: 4, y: 5, z: 6 },
+        rotationRate: { alpha: 7, beta: 8, gamma: 9 },
+        interval: 16,
+      },
     ];
 
     host
@@ -232,6 +240,9 @@ describe("Host", () => {
       )
       .on("tilt", (data, clientId) =>
         events.push(["tilt", clientId, data]),
+      )
+      .on("motion", (data, clientId) =>
+        events.push(["motion", clientId, data]),
       );
 
     for (const message of messages) {
@@ -245,6 +256,8 @@ describe("Host", () => {
       ["stick", "client-b", messages[1]],
       ["data", "client-b", messages[2]],
       ["tilt", "client-b", messages[2]],
+      ["data", "client-b", messages[3]],
+      ["motion", "client-b", messages[3]],
     ]);
   });
 

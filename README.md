@@ -21,7 +21,7 @@ The project currently supports:
 * One Host connecting to one or more Clients.
 * JSON/string messages over RTCDataChannel.
 * Host send, broadcast, and disconnect helpers.
-* A Controller extension for button, stick, and tilt messages.
+* A Controller extension for button, stick, tilt, and motion messages.
 * A QR extension for rendering strings as QR codes and scanning QR codes back
   into strings.
 * Practical static examples.
@@ -294,6 +294,10 @@ host.on("tilt", (data, clientId) => {
   console.log("tilt", clientId, data.alpha, data.beta, data.gamma);
 });
 
+host.on("motion", (data, clientId) => {
+  console.log("motion", clientId, data.acceleration, data.rotationRate);
+});
+
 host.on("data", (data, clientId) => {
   // Generic data still fires for all messages.
   console.log("raw data", clientId, data);
@@ -318,6 +322,13 @@ client.sendTilt({
   beta: 20,
   gamma: -5,
 });
+
+client.sendMotion({
+  acceleration: { x: 0.1, y: 0.2, z: 0.3 },
+  accelerationIncludingGravity: { x: 0.1, y: 9.8, z: 0.3 },
+  rotationRate: { alpha: 1, beta: 2, gamma: 3 },
+  interval: 16,
+});
 ```
 
 Browser input helpers:
@@ -328,13 +339,17 @@ const binding = client.bindButton(buttonElement, "A");
 const tilt = client.createTiltController();
 await tilt.start();
 
+const motion = client.createMotionController();
+await motion.start();
+
 // Later:
 tilt.stop();
+motion.stop();
 binding.unbind();
 ```
 
-Device orientation support depends on the browser. Mobile browsers may require
-HTTPS and an explicit permission prompt.
+Device orientation and device motion support depend on the browser. Mobile
+browsers may require HTTPS and an explicit permission prompt.
 
 ---
 
