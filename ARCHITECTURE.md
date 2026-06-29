@@ -159,7 +159,7 @@ Responsibilities:
 * Broadcast messages to all clients
 * Emit client-related events
 
-Future API:
+Public API:
 
 ```ts
 const host = new Host();
@@ -182,10 +182,6 @@ Host
 └─ Connection to Client C
 ```
 
-In Phase 1, only one client is required.
-
-Multi-client support is added later.
-
 ---
 
 ## Client
@@ -207,7 +203,7 @@ Responsibilities:
 * Receive messages from the Host
 * Emit connection events
 
-Future API:
+Public API:
 
 ```ts
 const client = new Client();
@@ -545,7 +541,7 @@ The reverse direction works the same way.
 
 # Multi-Client Architecture
 
-Multi-client support should be built by creating one WebRTC connection per client.
+Multi-client support is built by creating one WebRTC connection per client.
 
 Do not try to make one RTCDataChannel serve multiple clients.
 
@@ -629,11 +625,22 @@ These details should remain inside the library.
 
 # What Should Be Public
 
-The official public entry point is:
+When consumed as a package, the official public Core entry point is:
 
 ```ts
-import { Host, Client, Controller } from "./src/index.js";
+import { Host, Client } from "paste-rtc";
 ```
+
+The official public Controller extension entry point is:
+
+```ts
+import * as Controller from "paste-rtc/controller";
+```
+
+When working from local source files inside this repository, use
+`src/index.js` for the same public exports. `src/index.js` also re-exports a
+`Controller` namespace for compatibility, but new package consumers should
+prefer the `paste-rtc/controller` subpath for controller-specific imports.
 
 The public API should stay intentionally small.
 
@@ -719,8 +726,8 @@ client.bindButton(element, key, options?)
 ```
 
 Top-level files such as `src/host.js` and `src/client.js` are compatibility
-entry points for earlier phases. New library consumers should use
-`src/index.js`.
+entry points for earlier phases. New library consumers should use the package
+exports, or `src/index.js` when importing directly from local source files.
 
 Do not expose internal implementation details from `src/index.js`.
 
@@ -744,7 +751,7 @@ Internal modules include:
 5. Keep copy-paste signaling available even if QR is added later.
 6. Host and Client should be simple to understand.
 7. Connection should hide raw WebRTC complexity.
-8. Multi-client support should use one Connection per client.
+8. Multi-client support uses one Connection per client.
 9. Controller helpers should be optional.
 10. Do not build production infrastructure into the library.
 

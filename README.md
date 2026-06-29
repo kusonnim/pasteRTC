@@ -8,8 +8,8 @@ WebSocket signaling server, and no hosted signaling service. The first
 connection step is manual copy-paste signaling. After that, browsers exchange
 messages directly.
 
-PasteRTC is currently intended for local/internal use from this repository. It
-is not packaged for npm publishing yet.
+PasteRTC is currently intended to be used directly from this GitHub repository
+or from local source files. It is not published to npm yet.
 
 ---
 
@@ -25,8 +25,15 @@ The project currently supports:
 * Practical static examples.
 * Basic automated tests with Node's built-in test runner.
 
-PasteRTC is still early. The public API is intentionally small and should be
-used through `src/index.js`.
+PasteRTC is still early. The public API is intentionally small:
+
+```js
+import { Host, Client } from "paste-rtc";
+import * as Controller from "paste-rtc/controller";
+```
+
+When working inside this repository, the same public API is available through
+`src/index.js`.
 
 ---
 
@@ -53,7 +60,47 @@ opened directly as `file://` URLs.
 
 ---
 
-## Import locally
+## Use from another project as a GitHub dependency
+
+PasteRTC is not published to npm yet, but another JavaScript project can depend
+on this GitHub repository.
+
+Install from GitHub:
+
+```sh
+npm install github:kusonnim/pasteRTC
+```
+
+Or add it to another project's `package.json`:
+
+```json
+{
+  "dependencies": {
+    "paste-rtc": "github:kusonnim/pasteRTC"
+  }
+}
+```
+
+Then import the Core API from the package root:
+
+```js
+import { Host, Client } from "paste-rtc";
+```
+
+Import the Controller extension from its subpath:
+
+```js
+import * as Controller from "paste-rtc/controller";
+```
+
+For application code, prefer importing Core from the package root and the
+Controller extension from the `paste-rtc/controller` subpath. The package root
+also re-exports a `Controller` namespace from `src/index.js`, but the subpath
+keeps extension usage explicit.
+
+---
+
+## Import from local source files
 
 For local static projects inside this repository, import the public API from
 `src/index.js`:
@@ -98,7 +145,7 @@ offer/answer pair and its own WebRTC connection.
 Host:
 
 ```js
-import { Host } from "./src/index.js";
+import { Host } from "paste-rtc";
 
 const host = new Host();
 
@@ -125,7 +172,7 @@ host.send(JSON.stringify({
 Client:
 
 ```js
-import { Client } from "./src/index.js";
+import { Client } from "paste-rtc";
 
 const client = new Client();
 
@@ -155,7 +202,7 @@ The core Host can manage multiple Clients. Each Client must complete a separate
 manual signaling flow.
 
 ```js
-import { Host } from "./src/index.js";
+import { Host } from "paste-rtc";
 
 const host = new Host();
 
@@ -195,7 +242,7 @@ host.disconnect("phone-a");
 Client usage stays the same for each browser:
 
 ```js
-import { Client } from "./src/index.js";
+import { Client } from "paste-rtc";
 
 const client = new Client();
 const answer = await client.acceptOffer(offerText);
@@ -211,7 +258,7 @@ without changing WebRTC behavior.
 Use it through the `Controller` namespace:
 
 ```js
-import { Controller } from "./src/index.js";
+import * as Controller from "paste-rtc/controller";
 ```
 
 Controller Host:
@@ -279,16 +326,17 @@ HTTPS and an explicit permission prompt.
 
 ```text
 .
-├── examples/               # Practical local examples
-│   ├── basic/
-│   ├── controller/
-│   └── multi-client/
-├── src/
-│   ├── index.js            # Public library entry point
-│   ├── core/               # Generic communication core
-│   └── extensions/
-│       └── controller/     # Optional controller extension
-└── tests/                  # Automated tests
++-- examples/                 # Practical local examples
+|   +-- basic/
+|   +-- controller/
+|   `-- multi-client/
++-- src/
+|   +-- index.js              # Public entry point
+|   +-- core/                 # Generic communication core
+|   `-- extensions/
+|       `-- controller/       # Optional controller extension
++-- tests/                    # Automated tests
+`-- package.json              # Package metadata and exports
 ```
 
 Core contains generic browser-to-browser communication:
@@ -302,10 +350,17 @@ Core contains generic browser-to-browser communication:
 Extensions build on top of Core:
 
 ```text
-extensions → core
+extensions -> core
 ```
 
 Core must never import from extensions.
+
+Package exports mirror that split:
+
+```text
+paste-rtc              -> src/index.js
+paste-rtc/controller   -> src/extensions/controller/index.js
+```
 
 ---
 
@@ -325,7 +380,21 @@ keep the demo working, and keep existing tests passing.
 When adding application code, prefer the public entry point:
 
 ```js
+import { Host, Client } from "paste-rtc";
+import * as Controller from "paste-rtc/controller";
+```
+
+When editing examples or static pages inside this repository, use relative local
+source imports instead:
+
+```js
 import { Host, Client, Controller } from "./src/index.js";
+```
+
+Files under `examples/<name>/` need to walk back to the repository root:
+
+```js
+import { Host, Client } from "../../src/index.js";
 ```
 
 When working on library internals, keep generic networking inside `src/core/`
