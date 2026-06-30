@@ -2,6 +2,7 @@ import { Client, Host } from "../../src/index.js";
 
 let host;
 let client;
+let clientOfferText = "";
 
 const connectedClients = new Set();
 const $ = (selector) => document.querySelector(selector);
@@ -76,6 +77,13 @@ function setupClient() {
   client.on("connected", () => {
     $("#client-status").textContent = "connected";
   });
+  client.on("signaling-pending", () => {
+    $("#client-status").textContent = "answer ready; copy it to the host";
+  });
+  client.on("answer-expired", async () => {
+    $("#client-status").textContent = "answer expired; regenerated answer";
+    $("#answer-output").value = await client.regenerateAnswer(clientOfferText);
+  });
   client.on("statechange", (state) => {
     $("#client-status").textContent = state;
   });
@@ -112,7 +120,8 @@ $("#accept-answer").addEventListener("click", async () => {
 });
 
 $("#create-answer").addEventListener("click", async () => {
-  $("#answer-output").value = await setupClient().acceptOffer($("#offer-input").value);
+  clientOfferText = $("#offer-input").value;
+  $("#answer-output").value = await setupClient().acceptOffer(clientOfferText);
 });
 
 $("#send-selected").addEventListener("click", () => {

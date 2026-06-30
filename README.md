@@ -64,6 +64,10 @@ The exact port depends on the static server you use.
 Browser ES modules usually should be served over `http://localhost` rather than
 opened directly as `file://` URLs.
 
+The examples include the manual-signaling recovery flow: when a Client answer
+expires before the Host accepts it, the page regenerates a fresh answer with
+`client.regenerateAnswer(offerText)`.
+
 ---
 
 ## Use from another project as a GitHub dependency

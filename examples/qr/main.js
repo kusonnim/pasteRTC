@@ -5,6 +5,7 @@ let host;
 let client;
 let offerScanner;
 let answerScanner;
+let clientOfferText = "";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -55,6 +56,16 @@ function setupClient() {
   client = new Client();
   client.on("connected", () => {
     $("#client-status").textContent = "connected";
+  });
+  client.on("signaling-pending", () => {
+    $("#client-status").textContent = "answer ready; copy or scan it on the host";
+  });
+  client.on("answer-expired", async () => {
+    $("#client-status").textContent = "answer expired; regenerated answer QR";
+    const answer = await client.regenerateAnswer(clientOfferText);
+    $("#answer-output").value = answer;
+    generate($("#answer-qr"), answer);
+    appendLog($("#client-log"), "client", "regenerated answer QR");
   });
   client.on("statechange", (state) => {
     $("#client-status").textContent = state;
@@ -153,7 +164,8 @@ $("#stop-offer-scan").addEventListener("click", () => {
 });
 
 $("#create-answer").addEventListener("click", async () => {
-  const answer = await setupClient().acceptOffer($("#offer-input").value);
+  clientOfferText = $("#offer-input").value;
+  const answer = await setupClient().acceptOffer(clientOfferText);
   $("#answer-output").value = answer;
   generate($("#answer-qr"), answer);
   appendLog($("#client-log"), "client", "created answer QR");
