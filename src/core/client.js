@@ -12,6 +12,7 @@ export class Client extends Peer {
   #offerText = null;
   #answerPending = false;
   #connected = false;
+  #answerExpired = false;
 
   /**
    * @param {object} [callbacks]
@@ -56,6 +57,7 @@ export class Client extends Peer {
 
     this.#answerPending = false;
     this.#connected = false;
+    this.#answerExpired = false;
     this._replaceConnection();
     return this.#createAnswerFromOffer(offerText);
   }
@@ -79,6 +81,7 @@ export class Client extends Peer {
     if (state === "failed") {
       if (this.#answerPending && !this.#connected) {
         this.#answerPending = false;
+        this.#answerExpired = true;
         this._emit("answer-expired");
         this._emit("statechange", "answer-expired");
         return;
@@ -96,10 +99,18 @@ export class Client extends Peer {
     const offer = decodeOffer(offerText);
     await acceptOfferDescription(this, offer);
 
-    const answer = await createAnswerDescription(this);
     this.#offerText = offerText;
     this.#answerPending = true;
     this.#connected = false;
+    this.#answerExpired = false;
+
+    const answer = await createAnswerDescription(this);
+
+    if (this.#answerExpired) {
+      return encodeAnswer(answer);
+    }
+
+    this.#answerPending = true;
     this._emit("answer-created");
     this._emit("statechange", "answer-created");
     this._emit("signaling-pending");

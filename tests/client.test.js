@@ -98,6 +98,37 @@ describe("Client", () => {
     ]);
   });
 
+  test("reports failure during answer creation as answer-expired", async () => {
+    const client = new Client();
+    const clientPeer = latestPeerConnection();
+    const originalSetLocalDescription =
+      clientPeer.setLocalDescription.bind(clientPeer);
+    const events = [];
+    const states = [];
+
+    clientPeer.setLocalDescription = async (description) => {
+      await originalSetLocalDescription(description);
+      clientPeer.setConnectionState("failed");
+    };
+
+    client
+      .on("answer-created", () => events.push("answer-created"))
+      .on("answer-expired", () => events.push("answer-expired"))
+      .on("failed", () => events.push("failed"))
+      .on("statechange", (state) => states.push(state));
+
+    const answerText = await client.acceptOffer(
+      JSON.stringify({ type: "offer", sdp: "remote-offer" }),
+    );
+
+    assert.deepEqual(JSON.parse(answerText), {
+      type: "answer",
+      sdp: "fake-answer-sdp",
+    });
+    assert.deepEqual(events, ["answer-expired"]);
+    assert.deepEqual(states, ["answer-expired"]);
+  });
+
   test("can regenerate a fresh answer for the same offer", async () => {
     const client = new Client();
     const offer = { type: "offer", sdp: "remote-offer" };
