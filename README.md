@@ -66,7 +66,8 @@ opened directly as `file://` URLs.
 
 The examples include the manual-signaling recovery flow: when a Client answer
 expires before the Host accepts it, the page regenerates a fresh answer with
-`client.regenerateAnswer(offerText)`.
+`client.regenerateAnswer(offerText)`. They also ignore stale answer promises so
+an older `acceptOffer()` result cannot overwrite a newer regenerated answer.
 
 ---
 

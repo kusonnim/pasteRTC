@@ -239,7 +239,8 @@ const client = new Client();
 const answer = await client.acceptOffer(offerText);
 
 // Optional manual-signaling recovery when the answer expires before the Host
-// accepts it.
+// accepts it. Register lifecycle listeners before calling acceptOffer(), because
+// expiration can happen while the answer is still being created.
 const freshAnswer = await client.regenerateAnswer(offerText);
 
 client.send({

@@ -6,6 +6,7 @@ let tiltController;
 let motionController;
 let buttonBinding;
 let clientOfferText = "";
+let answerRequestId = 0;
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -73,7 +74,7 @@ function setupClient() {
   });
   client.on("answer-expired", async () => {
     $("#client-status").textContent = "answer expired; regenerated answer";
-    $("#answer-output").value = await client.regenerateAnswer(clientOfferText);
+    await createClientAnswer({ regenerate: true });
   });
   client.on("statechange", (state) => {
     $("#client-status").textContent = state;
@@ -87,6 +88,19 @@ function setupClient() {
   motionController = client.createMotionController();
 
   return client;
+}
+
+async function createClientAnswer({ regenerate = false } = {}) {
+  const requestId = ++answerRequestId;
+  const answer = regenerate
+    ? await setupClient().regenerateAnswer(clientOfferText)
+    : await setupClient().acceptOffer(clientOfferText);
+
+  if (requestId === answerRequestId) {
+    $("#answer-output").value = answer;
+  }
+
+  return answer;
 }
 
 $("#host-mode").addEventListener("click", () => {
@@ -109,7 +123,7 @@ $("#accept-answer").addEventListener("click", async () => {
 
 $("#create-answer").addEventListener("click", async () => {
   clientOfferText = $("#offer-input").value;
-  $("#answer-output").value = await setupClient().acceptOffer(clientOfferText);
+  await createClientAnswer();
 });
 
 $("#button-a").addEventListener("pointerdown", () => {

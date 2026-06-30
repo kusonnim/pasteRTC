@@ -198,9 +198,9 @@ const answerText = await client.acceptOffer(offerText);
 
 ### Manual signaling lifecycle
 
-Manual copy-paste and QR transfer can take time. After `acceptOffer()` returns
-an answer, the Client is waiting for the Host to accept that answer. During
-that window PasteRTC emits:
+Manual copy-paste and QR transfer can take time. As soon as `acceptOffer()`
+starts creating an answer, the Client is waiting for the Host to accept the
+answer that will be transferred. During that window PasteRTC emits:
 
 ```js
 client.on("answer-created", () => {
@@ -216,12 +216,28 @@ If the Client-side WebRTC attempt fails before the connection opens, PasteRTC
 reports that as `answer-expired` instead of a normal connected-session failure:
 
 ```js
-let latestAnswerText = await client.acceptOffer(offerText);
+let latestAnswerText = "";
+let answerRequestId = 0;
 
 client.on("answer-expired", async () => {
-  latestAnswerText = await client.regenerateAnswer(offerText);
-  showAnswerToUser(latestAnswerText);
+  await createAnswer({ regenerate: true });
 });
+
+async function createAnswer({ regenerate = false } = {}) {
+  const requestId = ++answerRequestId;
+  const answerText = regenerate
+    ? await client.regenerateAnswer(offerText)
+    : await client.acceptOffer(offerText);
+
+  // Ignore stale answer promises if expiration caused a newer answer to be
+  // generated while an older acceptOffer() call was still finishing.
+  if (requestId === answerRequestId) {
+    latestAnswerText = answerText;
+    showAnswerToUser(latestAnswerText);
+  }
+}
+
+await createAnswer();
 ```
 
 Use this to tell the user: "This answer expired. Generate a fresh answer."

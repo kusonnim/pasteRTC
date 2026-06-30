@@ -3,6 +3,7 @@ import { Client, Host } from "../../src/index.js";
 let host;
 let client;
 let clientOfferText = "";
+let answerRequestId = 0;
 
 const connectedClients = new Set();
 const $ = (selector) => document.querySelector(selector);
@@ -82,7 +83,7 @@ function setupClient() {
   });
   client.on("answer-expired", async () => {
     $("#client-status").textContent = "answer expired; regenerated answer";
-    $("#answer-output").value = await client.regenerateAnswer(clientOfferText);
+    await createClientAnswer({ regenerate: true });
   });
   client.on("statechange", (state) => {
     $("#client-status").textContent = state;
@@ -95,6 +96,19 @@ function setupClient() {
   });
 
   return client;
+}
+
+async function createClientAnswer({ regenerate = false } = {}) {
+  const requestId = ++answerRequestId;
+  const answer = regenerate
+    ? await setupClient().regenerateAnswer(clientOfferText)
+    : await setupClient().acceptOffer(clientOfferText);
+
+  if (requestId === answerRequestId) {
+    $("#answer-output").value = answer;
+  }
+
+  return answer;
 }
 
 $("#host-mode").addEventListener("click", () => {
@@ -121,7 +135,7 @@ $("#accept-answer").addEventListener("click", async () => {
 
 $("#create-answer").addEventListener("click", async () => {
   clientOfferText = $("#offer-input").value;
-  $("#answer-output").value = await setupClient().acceptOffer(clientOfferText);
+  await createClientAnswer();
 });
 
 $("#send-selected").addEventListener("click", () => {
