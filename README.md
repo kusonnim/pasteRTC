@@ -200,6 +200,11 @@ client.on("data", (data) => {
   console.log("from host", data);
 });
 
+client.on("answer-expired", async () => {
+  const freshAnswer = await client.regenerateAnswer(offerText);
+  console.log("answer expired; copy this fresh answer instead", freshAnswer);
+});
+
 // Paste the offer text from the host.
 const answer = await client.acceptOffer(offerText);
 
@@ -263,6 +268,11 @@ import { Client } from "paste-rtc";
 const client = new Client();
 const answer = await client.acceptOffer(offerText);
 ```
+
+If manual copy-paste or QR transfer takes too long, the pending answer can
+expire before the Host accepts it. Listen for `answer-expired` and call
+`client.regenerateAnswer(offerText)` to create a fresh answer for the same
+offer.
 
 ---
 

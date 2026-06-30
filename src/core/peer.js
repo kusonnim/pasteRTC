@@ -5,6 +5,10 @@ const SUPPORTED_EVENTS = new Set([
   "data",
   "statechange",
   "error",
+  "answer-created",
+  "answer-expired",
+  "signaling-pending",
+  "failed",
 ]);
 
 const CALLBACK_EVENTS = {
@@ -23,6 +27,7 @@ const connections = new WeakMap();
  */
 export class Peer {
   #listeners = new Map();
+  #role;
 
   /**
    * @param {"host" | "client"} role
@@ -33,6 +38,8 @@ export class Peer {
    * @param {(error: Error) => void} [callbacks.onError]
    */
   constructor(role, callbacks = {}) {
+    this.#role = role;
+
     for (const [callbackName, eventName] of Object.entries(CALLBACK_EVENTS)) {
       const callback = callbacks[callbackName];
 
@@ -41,21 +48,16 @@ export class Peer {
       }
     }
 
-    connections.set(this, new Connection({
-      role,
-      onOpen: () => this.#emit("connected"),
-      onMessage: (data) => this.#emit("data", data),
-      onStateChange: (state) => this.#emit("statechange", state),
-      onError: (error) => this.#emit("error", error),
-    }));
+    this._replaceConnection();
   }
 
   /**
    * Registers a listener for a peer event.
    *
-   * Supported events: `connected`, `data`, `statechange`, and `error`.
+   * Supported events: `connected`, `data`, `statechange`, `error`,
+   * `answer-created`, `signaling-pending`, `answer-expired`, and `failed`.
    *
-   * @param {"connected" | "data" | "statechange" | "error"} eventName
+   * @param {"connected" | "data" | "statechange" | "error" | "answer-created" | "signaling-pending" | "answer-expired" | "failed"} eventName
    * @param {Function} callback
    * @returns {this}
    */
@@ -88,7 +90,59 @@ export class Peer {
     getConnection(this).close();
   }
 
-  #emit(eventName, value) {
+  /** @internal */
+  _replaceConnection() {
+    const existingConnection = connections.get(this);
+    const connection = new Connection({
+      role: this.#role,
+      onOpen: () => {
+        if (connections.get(this) === connection) {
+          this._handleOpen();
+        }
+      },
+      onMessage: (data) => {
+        if (connections.get(this) === connection) {
+          this._handleMessage(data);
+        }
+      },
+      onStateChange: (state) => {
+        if (connections.get(this) === connection) {
+          this._handleStateChange(state);
+        }
+      },
+      onError: (error) => {
+        if (connections.get(this) === connection) {
+          this._handleError(error);
+        }
+      },
+    });
+
+    connections.set(this, connection);
+    existingConnection?.close();
+  }
+
+  /** @internal */
+  _handleOpen() {
+    this._emit("connected");
+  }
+
+  /** @internal */
+  _handleMessage(data) {
+    this._emit("data", data);
+  }
+
+  /** @internal */
+  _handleStateChange(state) {
+    this._emit("statechange", state);
+  }
+
+  /** @internal */
+  _handleError(error) {
+    this._emit("error", error);
+  }
+
+  /** @internal */
+  _emit(eventName, value) {
     for (const listener of this.#listeners.get(eventName) ?? []) {
       listener(value);
     }
