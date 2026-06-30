@@ -11,10 +11,9 @@ npx serve .
 
 Then open one of the example pages:
 
-* `examples/basic/` — Core Host and Client with manual signaling and JSON messages.
-* `examples/controller/` — Controller extension helpers and typed host events.
-* `examples/multi-client/` — One Host managing multiple Clients with send and broadcast.
-
+* `examples/basic/` - Core Host and Client with manual signaling and JSON messages.
+* `examples/controller/` - Controller extension helpers and typed host events.
+* `examples/multi-client/` - One Host managing multiple Clients with send and broadcast.
 * `examples/qr/` - Core Host and Client with optional QR signaling helpers.
 
 Each example keeps signaling manual:
@@ -24,6 +23,14 @@ Each example keeps signaling manual:
 3. Open a Client page, paste the offer, and create an answer.
 4. Copy the answer back to the Host.
 5. Accept the answer.
+
+The Client examples also listen for `answer-expired`. If the answer expires
+before the Host accepts it, the page regenerates a fresh answer with
+`client.regenerateAnswer(offerText)` and updates the answer output.
+
+The examples use an answer request counter so an older `acceptOffer()` promise
+cannot overwrite a newer regenerated answer if expiration happens while the
+first answer is still being created.
 
 For multi-client testing, repeat the offer/answer flow once per client using a
 different client ID.

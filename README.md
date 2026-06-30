@@ -64,6 +64,11 @@ The exact port depends on the static server you use.
 Browser ES modules usually should be served over `http://localhost` rather than
 opened directly as `file://` URLs.
 
+The examples include the manual-signaling recovery flow: when a Client answer
+expires before the Host accepts it, the page regenerates a fresh answer with
+`client.regenerateAnswer(offerText)`. They also ignore stale answer promises so
+an older `acceptOffer()` result cannot overwrite a newer regenerated answer.
+
 ---
 
 ## Use from another project as a GitHub dependency
@@ -200,6 +205,11 @@ client.on("data", (data) => {
   console.log("from host", data);
 });
 
+client.on("answer-expired", async () => {
+  const freshAnswer = await client.regenerateAnswer(offerText);
+  console.log("answer expired; copy this fresh answer instead", freshAnswer);
+});
+
 // Paste the offer text from the host.
 const answer = await client.acceptOffer(offerText);
 
@@ -263,6 +273,11 @@ import { Client } from "paste-rtc";
 const client = new Client();
 const answer = await client.acceptOffer(offerText);
 ```
+
+If manual copy-paste or QR transfer takes too long, the pending answer can
+expire before the Host accepts it. Listen for `answer-expired` and call
+`client.regenerateAnswer(offerText)` to create a fresh answer for the same
+offer.
 
 ---
 

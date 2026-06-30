@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, test } from "node:test";
 
 import { Client } from "../src/client.js";
+import { Host } from "../src/host.js";
 import {
   installWebRTCFakes,
   latestPeerConnection,
@@ -15,6 +16,7 @@ describe("Client", () => {
 
     for (const method of [
       "acceptOffer",
+      "regenerateAnswer",
       "send",
       "sendButton",
       "sendStick",
@@ -36,6 +38,7 @@ describe("Client", () => {
     const client = new Client();
 
     assert.equal(client.on("data", () => {}), client);
+    assert.equal(client.on("answer-expired", () => {}), client);
     assert.throws(() => client.on("unknown", () => {}), /Unsupported event/);
     assert.throws(() => client.on("connected", "invalid"), /must be a function/);
   });
@@ -51,6 +54,127 @@ describe("Client", () => {
       type: "answer",
       sdp: "fake-answer-sdp",
     });
+  });
+
+  test("reports answer-created and signaling-pending after accepting an offer", async () => {
+    const events = [];
+    const states = [];
+    const client = new Client();
+
+    client
+      .on("answer-created", () => events.push("answer-created"))
+      .on("signaling-pending", () => events.push("signaling-pending"))
+      .on("statechange", (state) => states.push(state));
+
+    await client.acceptOffer(
+      JSON.stringify({ type: "offer", sdp: "remote-offer" }),
+    );
+
+    assert.deepEqual(events, ["answer-created", "signaling-pending"]);
+    assert.deepEqual(states, ["answer-created", "signaling-pending"]);
+  });
+
+  test("reports pre-connect failure as answer-expired when the host has not accepted", async () => {
+    const host = new Host();
+    const offerText = await host.createOffer();
+    const client = new Client();
+    const clientPeer = latestPeerConnection();
+    const events = [];
+    const states = [];
+
+    client
+      .on("answer-expired", () => events.push("answer-expired"))
+      .on("failed", () => events.push("failed"))
+      .on("statechange", (state) => states.push(state));
+
+    await client.acceptOffer(offerText);
+    clientPeer.setConnectionState("failed");
+
+    assert.deepEqual(events, ["answer-expired"]);
+    assert.deepEqual(states, [
+      "answer-created",
+      "signaling-pending",
+      "answer-expired",
+    ]);
+  });
+
+  test("reports failure during answer creation as answer-expired", async () => {
+    const client = new Client();
+    const clientPeer = latestPeerConnection();
+    const originalSetLocalDescription =
+      clientPeer.setLocalDescription.bind(clientPeer);
+    const events = [];
+    const states = [];
+
+    clientPeer.setLocalDescription = async (description) => {
+      await originalSetLocalDescription(description);
+      clientPeer.setConnectionState("failed");
+    };
+
+    client
+      .on("answer-created", () => events.push("answer-created"))
+      .on("answer-expired", () => events.push("answer-expired"))
+      .on("failed", () => events.push("failed"))
+      .on("statechange", (state) => states.push(state));
+
+    const answerText = await client.acceptOffer(
+      JSON.stringify({ type: "offer", sdp: "remote-offer" }),
+    );
+
+    assert.deepEqual(JSON.parse(answerText), {
+      type: "answer",
+      sdp: "fake-answer-sdp",
+    });
+    assert.deepEqual(events, ["answer-expired"]);
+    assert.deepEqual(states, ["answer-expired"]);
+  });
+
+  test("can regenerate a fresh answer for the same offer", async () => {
+    const client = new Client();
+    const offer = { type: "offer", sdp: "remote-offer" };
+    const firstPeer = latestPeerConnection();
+
+    const firstAnswerText = await client.acceptOffer(JSON.stringify(offer));
+    firstPeer.setConnectionState("failed");
+
+    const secondAnswerText = await client.regenerateAnswer();
+    const secondPeer = latestPeerConnection();
+
+    assert.notEqual(secondPeer, firstPeer);
+    assert.deepEqual(JSON.parse(firstAnswerText), {
+      type: "answer",
+      sdp: "fake-answer-sdp",
+    });
+    assert.deepEqual(JSON.parse(secondAnswerText), {
+      type: "answer",
+      sdp: "fake-answer-sdp",
+    });
+    assert.deepEqual(secondPeer.remoteDescription, offer);
+  });
+
+  test("reports normal post-connect failure as failed", async () => {
+    const events = [];
+    const states = [];
+    const client = new Client();
+    const peer = latestPeerConnection();
+
+    client
+      .on("answer-expired", () => events.push("answer-expired"))
+      .on("failed", () => events.push("failed"))
+      .on("statechange", (state) => states.push(state));
+
+    await client.acceptOffer(
+      JSON.stringify({ type: "offer", sdp: "remote-offer" }),
+    );
+    peer.receiveDataChannel().open();
+    peer.setConnectionState("failed");
+
+    assert.deepEqual(events, ["failed"]);
+    assert.deepEqual(states, [
+      "answer-created",
+      "signaling-pending",
+      "failed",
+    ]);
   });
 
   test("emits basic state and DataChannel events", () => {

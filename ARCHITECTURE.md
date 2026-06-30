@@ -238,6 +238,11 @@ const client = new Client();
 
 const answer = await client.acceptOffer(offerText);
 
+// Optional manual-signaling recovery when the answer expires before the Host
+// accepts it. Register lifecycle listeners before calling acceptOffer(), because
+// expiration can happen while the answer is still being created.
+const freshAnswer = await client.regenerateAnswer(offerText);
+
 client.send({
     type: "button",
     key: "A",
@@ -764,6 +769,7 @@ clientDisconnected
 
 ```ts
 client.acceptOffer(offerText)
+client.regenerateAnswer(offerText?)
 client.send(data)
 client.close()
 client.on(eventName, handler)
@@ -776,6 +782,10 @@ connected
 data
 statechange
 error
+answer-created
+signaling-pending
+answer-expired
+failed
 ```
 
 ## Public Controller Extension API

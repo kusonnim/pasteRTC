@@ -182,11 +182,76 @@ Client:
 ```js
 const client = new Client();
 
+client.on("signaling-pending", () => {
+  showStatus("Copy this answer back to the host.");
+});
+
+client.on("answer-expired", async () => {
+  showStatus("This answer expired. Generate a fresh answer.");
+});
+
 // Paste the host offer into offerText.
 const answerText = await client.acceptOffer(offerText);
 
 // Copy answerText back to the host.
 ```
+
+### Manual signaling lifecycle
+
+Manual copy-paste and QR transfer can take time. As soon as `acceptOffer()`
+starts creating an answer, the Client is waiting for the Host to accept the
+answer that will be transferred. During that window PasteRTC emits:
+
+```js
+client.on("answer-created", () => {
+  console.log("Answer string is ready to transfer.");
+});
+
+client.on("signaling-pending", () => {
+  console.log("Waiting for the host to accept this answer.");
+});
+```
+
+If the Client-side WebRTC attempt fails before the connection opens, PasteRTC
+reports that as `answer-expired` instead of a normal connected-session failure:
+
+```js
+let latestAnswerText = "";
+let answerRequestId = 0;
+
+client.on("answer-expired", async () => {
+  await createAnswer({ regenerate: true });
+});
+
+async function createAnswer({ regenerate = false } = {}) {
+  const requestId = ++answerRequestId;
+  const answerText = regenerate
+    ? await client.regenerateAnswer(offerText)
+    : await client.acceptOffer(offerText);
+
+  // Ignore stale answer promises if expiration caused a newer answer to be
+  // generated while an older acceptOffer() call was still finishing.
+  if (requestId === answerRequestId) {
+    latestAnswerText = answerText;
+    showAnswerToUser(latestAnswerText);
+  }
+}
+
+await createAnswer();
+```
+
+Use this to tell the user: "This answer expired. Generate a fresh answer."
+
+`client.regenerateAnswer(offerText)` creates a fresh peer connection and a new
+answer for the same offer. If you omit `offerText`, PasteRTC reuses the most
+recent offer accepted by that Client:
+
+```js
+const freshAnswerText = await client.regenerateAnswer();
+```
+
+PasteRTC does not automatically reconnect or resend signals. Applications stay
+in control of the manual signaling UI.
 
 ### Send JSON
 
@@ -262,6 +327,10 @@ client.on("connected", () => {});
 client.on("data", (data) => {});
 client.on("statechange", (state) => {});
 client.on("error", (error) => {});
+client.on("answer-created", () => {});
+client.on("signaling-pending", () => {});
+client.on("answer-expired", () => {});
+client.on("failed", () => {});
 ```
 
 ---
@@ -441,7 +510,18 @@ const answerText = await client.acceptOffer(offerText);
 QR.generate(answerCanvas, answerText);
 ```
 
-Keep copy-paste controls available as a fallback.
+If scanning the answer on the Host side takes too long, the Client may emit
+`answer-expired`. Generate and display a fresh answer:
+
+```js
+client.on("answer-expired", async () => {
+  const freshAnswerText = await client.regenerateAnswer(offerText);
+  QR.generate(answerCanvas, freshAnswerText);
+});
+```
+
+Keep copy-paste controls available as a fallback. QR is only a transfer helper
+for the same offer and answer strings.
 
 ---
 
@@ -732,12 +812,17 @@ Avoid sending non-serializable objects if you plan to use JSON.
 | `host.on("error", fn)` | Runs when an error is reported. |
 | `new Client()` | Creates a client for one host connection. |
 | `client.acceptOffer(offerText)` | Accepts an offer and returns an answer string. |
+| `client.regenerateAnswer(offerText?)` | Creates a fresh answer after an answer expires. |
 | `client.send(data)` | Sends a string to the host. |
 | `client.close()` | Closes the client connection. |
 | `client.on("connected", fn)` | Runs when the client connects. |
 | `client.on("data", fn)` | Runs when the client receives data from the host. |
 | `client.on("statechange", fn)` | Runs when the client state changes. |
 | `client.on("error", fn)` | Runs when the client reports an error. |
+| `client.on("answer-created", fn)` | Runs when a transferable answer has been created. |
+| `client.on("signaling-pending", fn)` | Runs while waiting for the host to accept an answer. |
+| `client.on("answer-expired", fn)` | Runs when the pending answer fails before connection. |
+| `client.on("failed", fn)` | Runs when an established client session fails. |
 
 ### Controller API
 
@@ -769,4 +854,3 @@ Avoid sending non-serializable objects if you plan to use JSON.
 | `QR.scan(videoElement, options?)` | Starts scanning QR codes from a video element. |
 | `scanner.result` | Promise resolving to decoded QR text. |
 | `scanner.stop()` | Stops scanning and releases the camera. |
-

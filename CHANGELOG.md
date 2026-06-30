@@ -14,10 +14,14 @@
   and `host.on("motion", ...)`.
 * Updated the controller example to demonstrate Device Motion start/stop and
   motion event logging.
+* Added explicit Client manual-signaling lifecycle events:
+  `answer-created`, `signaling-pending`, `answer-expired`, and `failed`.
+* Added `client.regenerateAnswer(offerText?)` for creating a fresh answer when
+  a pending manual answer expires before the Host accepts it.
 
 ### Notes
 
 * Copy-paste signaling remains the baseline.
 * QR is optional and separate from Core.
-* Core, signaling, WebRTC behavior, Host APIs, and Client APIs are unchanged.
+* Signaling format, WebRTC behavior, and Host APIs are unchanged.
 * QR chunking and compression are not implemented.
